@@ -572,16 +572,19 @@ function BoreholeDataCard({ data }) {
 
 // ─── PanoVideo Component (Three.js 360° video player) ────────────────────────
 // Loads Three.js from CDN, renders equirectangular video on inverted sphere.
-function PanoVideo({ videoUrls, locationName, tall }) {
+function PanoVideo({ videoUrls, locationName, tall, btnHidden, onToggleHide }) {
   const videos = videoUrls || [];
   const [idx, setIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [showBtn, setShowBtn] = useState(true);
+  const btnTimer = useRef(null);
   const containerRef = useRef(null);
   const stateRef = useRef(null); // { renderer, scene, camera, video, animId }
+  const dragRef = useRef(false);
   const current = videos[idx] || null;
   const h = tall ? "calc(100vh - 220px)" : "240px";
 
-  useEffect(() => { setIdx(0); setPlaying(false); }, [locationName]);
+  useEffect(() => { setIdx(0); setPlaying(false); setShowBtn(true); if (btnTimer.current) clearTimeout(btnTimer.current); if (onToggleHide) onToggleHide(false); }, [locationName]);
 
   // Cleanup helper
   const cleanup = () => {
@@ -638,17 +641,20 @@ function PanoVideo({ videoUrls, locationName, tall }) {
       // Mouse drag controls
       let isDragging = false, prevX = 0, prevY = 0;
       let lon = 0, lat = 0;
+      let startX = 0, startY = 0, moved = false;
 
-      const onDown = (e) => { isDragging = true; const p = e.touches ? e.touches[0] : e; prevX = p.clientX; prevY = p.clientY; };
+      const onDown = (e) => { isDragging = true; moved = false; const p = e.touches ? e.touches[0] : e; prevX = p.clientX; prevY = p.clientY; startX = p.clientX; startY = p.clientY; };
       const onMove = (e) => {
         if (!isDragging) return;
         const p = e.touches ? e.touches[0] : e;
+        const dx = p.clientX - startX, dy = p.clientY - startY;
+        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) moved = true;
         lon -= (p.clientX - prevX) * 0.2;
         lat += (p.clientY - prevY) * 0.2;
         lat = Math.max(-85, Math.min(85, lat));
         prevX = p.clientX; prevY = p.clientY;
       };
-      const onUp = () => { isDragging = false; };
+      const onUp = () => { if (!moved && isDragging) { dragRef.current = true; } isDragging = false; };
 
       renderer.domElement.addEventListener("mousedown", onDown);
       renderer.domElement.addEventListener("mousemove", onMove);
@@ -688,11 +694,18 @@ function PanoVideo({ videoUrls, locationName, tall }) {
   }, [current, locationName]);
 
   // Play/pause control
-  const togglePlay = () => {
+  const togglePlay = (fromFrame) => {
     const s = stateRef.current;
     if (!s?.video) return;
-    if (s.video.paused) { s.video.play(); setPlaying(true); }
-    else { s.video.pause(); setPlaying(false); }
+    if (btnTimer.current) clearTimeout(btnTimer.current);
+    if (s.video.paused) {
+      s.video.play(); setPlaying(true); setShowBtn(true);
+      btnTimer.current = setTimeout(() => setShowBtn(false), 3000);
+    } else {
+      s.video.pause(); setPlaying(false);
+      if (btnHidden && fromFrame) { /* stay hidden, user will use top bar button */ }
+      else { setShowBtn(true); }
+    }
   };
 
   if (!videos.length) return (
@@ -703,16 +716,25 @@ function PanoVideo({ videoUrls, locationName, tall }) {
   );
   return (
     <div style={{ position: "relative", width: "100%" }}>
-      <div ref={containerRef} style={{ width: "100%", height: h, borderRadius: 8, overflow: "hidden", border: "1px solid " + C.border, background: "#000", cursor: "grab" }} />
-      {/* Play/pause overlay */}
-      <button onClick={togglePlay} style={{ position: "absolute", bottom: 12, left: 12, padding: "8px 16px", borderRadius: 980, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", fontSize: 13, cursor: "pointer", fontFamily: "-apple-system,sans-serif" }}>
-        {playing ? "⏸ Pause" : "▶ Play"}
-      </button>
+      <div ref={containerRef} onClick={() => { if (dragRef.current) { dragRef.current = false; if (playing || btnHidden) togglePlay(true); } }} style={{ width: "100%", height: h, borderRadius: 8, overflow: "hidden", border: "1px solid " + C.border, background: "#000", cursor: "grab" }} />
+      {/* Center play/pause + hide button */}
+      {!btnHidden && (
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, transition: "opacity 0.5s", opacity: showBtn ? 1 : 0, pointerEvents: showBtn ? "auto" : "none" }}>
+          <button onClick={() => togglePlay(false)} style={{ padding: "12px 24px", borderRadius: 980, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.25)", color: "#fff", fontSize: 15, cursor: "pointer", fontFamily: "-apple-system,sans-serif" }}>
+            {playing ? "⏸ Pause" : "▶ Play"}
+          </button>
+          {!playing && (
+            <button onClick={() => { if (onToggleHide) onToggleHide(true); }} style={{ padding: "4px 12px", borderRadius: 980, background: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.6)", fontSize: 11, cursor: "pointer", fontFamily: "-apple-system,sans-serif" }}>
+              Hide play button
+            </button>
+          )}
+        </div>
+      )}
       {videos.length > 1 && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginTop: 8 }}>
-          <button onClick={() => { setIdx((idx - 1 + videos.length) % videos.length); setPlaying(false); }} style={{ width: 30, height: 30, borderRadius: "50%", border: "1px solid " + C.border, background: C.bgPanel, color: C.blueLight, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>←</button>
+          <button onClick={() => { setIdx((idx - 1 + videos.length) % videos.length); setPlaying(false); setShowBtn(true); }} style={{ width: 30, height: 30, borderRadius: "50%", border: "1px solid " + C.border, background: C.bgPanel, color: C.blueLight, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>←</button>
           <span style={{ color: C.textMuted, fontSize: 11, fontFamily: "Roboto,sans-serif", minWidth: 50, textAlign: "center" }}>{idx + 1} / {videos.length}</span>
-          <button onClick={() => { setIdx((idx + 1) % videos.length); setPlaying(false); }} style={{ width: 30, height: 30, borderRadius: "50%", border: "1px solid " + C.border, background: C.bgPanel, color: C.blueLight, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>→</button>
+          <button onClick={() => { setIdx((idx + 1) % videos.length); setPlaying(false); setShowBtn(true); }} style={{ width: 30, height: 30, borderRadius: "50%", border: "1px solid " + C.border, background: C.bgPanel, color: C.blueLight, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>→</button>
         </div>
       )}
     </div>
@@ -727,9 +749,10 @@ function MediaViewer({ loc, tall }) {
   if (hasPhotos) tabs.push("photos");
   if (hasVideo) tabs.push("video");
   const [activeTab, setActiveTab] = useState(tabs[0] || "photos");
+  const [playBtnHidden, setPlayBtnHidden] = useState(false);
 
-  // Reset tab when location changes
-  useEffect(() => { setActiveTab(tabs[0] || "photos"); }, [loc.id]);
+  // Reset tab and hidden state when location changes
+  useEffect(() => { setActiveTab(tabs[0] || "photos"); setPlayBtnHidden(false); }, [loc.id]);
 
   if (!tabs.length) return (
     <div style={{ width: "100%", height: 240, borderRadius: 8, overflow: "hidden", border: "1px solid " + C.border, background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
@@ -740,19 +763,34 @@ function MediaViewer({ loc, tall }) {
 
   return (
     <div>
-      {/* Only show tabs if both types exist */}
+      {/* Tabs + inline play button when hidden */}
       {tabs.length > 1 && (
-        <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
+        <div style={{ display: "flex", gap: 4, marginBottom: 10, alignItems: "center" }}>
           {tabs.map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab)}
+            <button key={tab} onClick={() => { setActiveTab(tab); if (tab !== "video") setPlayBtnHidden(false); }}
               style={{ padding: "6px 16px", borderRadius: 6, border: "1px solid " + (activeTab === tab ? C.blue + "55" : "rgba(255,255,255,0.1)"), background: activeTab === tab ? C.blue + "18" : "transparent", color: activeTab === tab ? "#fff" : "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: activeTab === tab ? 600 : 400, cursor: "pointer", textTransform: "capitalize", fontFamily: "Roboto,sans-serif" }}>
               {tab === "photos" ? "📷 Photos" : "🎥 Video"}
             </button>
           ))}
+          {playBtnHidden && activeTab === "video" && (
+            <button onClick={() => setPlayBtnHidden(false)}
+              style={{ padding: "5px 12px", borderRadius: 980, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", fontSize: 11, cursor: "pointer", fontFamily: "-apple-system,sans-serif", marginLeft: 4 }}>
+              ▶ Show play button
+            </button>
+          )}
+        </div>
+      )}
+      {/* Single tab + inline play when hidden (no tab bar normally shown) */}
+      {tabs.length === 1 && playBtnHidden && activeTab === "video" && (
+        <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
+          <button onClick={() => setPlayBtnHidden(false)}
+            style={{ padding: "5px 12px", borderRadius: 980, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", fontSize: 11, cursor: "pointer", fontFamily: "-apple-system,sans-serif" }}>
+            ▶ Show play button
+          </button>
         </div>
       )}
       {activeTab === "photos" && <PanoViewer photoUrl={loc.photoUrl} photoUrls={loc.photoUrls} locationName={loc.name} tall={tall} />}
-      {activeTab === "video" && <PanoVideo videoUrls={loc.videoUrls} locationName={loc.name} tall={tall} />}
+      {activeTab === "video" && <PanoVideo videoUrls={loc.videoUrls} locationName={loc.name} tall={tall} btnHidden={playBtnHidden} onToggleHide={setPlayBtnHidden} />}
     </div>
   );
 }
