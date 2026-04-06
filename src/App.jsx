@@ -43,7 +43,7 @@ const SECTIONS = {
       {url:"/pano/elementary_school_borehole/IMG_20260103_030527_00_098.jpg",yaw:0.4,pitch:-13.6,hfov:120},
       {url:"/pano/elementary_school_borehole/IMG_20260103_030547_00_099.jpg",yaw:-24.9,pitch:-21.3,hfov:120},
     ],lat:10.6934,lng:-2.5699,realCoords:true,description:"Elementary School's Borehole.",tags:["#borehole","#handpump"],data:{pump_type:"Hand pump"},videoUrls:["/pano/elementary_school_borehole/VID_20260103_030601_00_100.mp4"]},
-    {id:"cm3",lodTier:1,name:"Dhantie Dam",       photoUrl:"",lat:10.6928,lng:-2.5607,labelScale:1.5,realCoords:true,description:"The Ullo Dhantie Dam is a completed water infrastructure project developed in partnership with the community of Ullo Ghana. Designed to capture and store rainwater during the wet season, providing a reliable water source for agriculture and community use throughout the dry season.",tags:["#ullodam","#waterinfrastructure"]},
+    {id:"cm3",lodTier:1,name:"Dante Dam",       photoUrl:"",lat:10.6928,lng:-2.5607,labelScale:1.5,realCoords:true,description:"The Ullo Dante Dam is a completed water infrastructure project developed in partnership with the community of Ullo Ghana. Designed to capture and store rainwater during the wet season, providing a reliable water source for agriculture and community use throughout the dry season.",tags:["#ullodam","#waterinfrastructure"]},
     {id:"cm4",lodTier:3,markerColor:"#60A5FA",name:"Islamic School Borehole",   photoUrl:"/pano/islamic_school_borehole/IMG_20260101_075736_00_016.jpg",photoUrls:[
       {url:"/pano/islamic_school_borehole/IMG_20260101_075736_00_016.jpg",yaw:-2,pitch:9.2,hfov:120},
       {url:"/pano/islamic_school_borehole/IMG_20260101_075817_00_017.jpg",yaw:4.2,pitch:5.9,hfov:110},
@@ -207,18 +207,9 @@ const SECTIONS = {
     {id:"l4",name:"Boys Latrine 2",         photoUrl:"",lat:10.6916,lng:-2.5650,realCoords:false,description:"",tags:[]},
   ]},
   clinic:{label:"Clinic",icon:"",color:"#E8913A",subsections:[
-    {id:"c1",lodTier:1,name:"Ullo Clinic Site",photoUrl:"/pano/clinic_site/IMG_20260103_085953_00_102.jpg",photoUrls:[
-      {url:"/pano/clinic_site/IMG_20260103_085953_00_102.jpg",yaw:9.6,pitch:-6.3,hfov:120},
-      {url:"/pano/clinic_site/IMG_20260103_090105_00_103.jpg",yaw:-23.9,pitch:-4.4,hfov:120},
-      {url:"/pano/clinic_site/IMG_20260103_090307_00_104.jpg",yaw:28.4,pitch:2.4,hfov:120},
-      {url:"/pano/clinic_site/IMG_20260103_090600_00_105.jpg",yaw:5.8,pitch:0.1,hfov:110},
-      {url:"/pano/clinic_site/IMG_20260103_090949_00_106.jpg",yaw:-17.8,pitch:4,hfov:120},
-      {url:"/pano/clinic_site/IMG_20260103_091138_00_107.jpg",yaw:28.1,pitch:-1.9,hfov:120},
-      {url:"/pano/clinic_site/IMG_20260103_092208_00_108.jpg",yaw:-20.4,pitch:8.2,hfov:120},
-      {url:"/pano/clinic_site/IMG_20260103_092346_00_109.jpg",yaw:0.2,pitch:5.7,hfov:120},
-      {url:"/pano/clinic_site/IMG_20260103_093109_00_110.jpg",yaw:-3.6,pitch:2.8,hfov:120},
-      {url:"/pano/clinic_site/IMG_20260103_093302_00_111.jpg",yaw:4.4,pitch:5.6,hfov:120},
+    {id:"c1",lodTier:1,name:"Ullo Clinic Site",photoUrl:"/pano/clinic_site/IMG_20260103_093405_00_112.jpg",photoUrls:[
       {url:"/pano/clinic_site/IMG_20260103_093405_00_112.jpg",yaw:1.4,pitch:-3.2,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_093558_00_113.jpg",yaw:0,pitch:0,hfov:120},
       {url:"/pano/clinic_site/IMG_20260103_093654_00_114.jpg",yaw:80.2,pitch:1.4,hfov:120},
       {url:"/pano/clinic_site/IMG_20260103_093716_00_115.jpg",yaw:144.2,pitch:-5.6,hfov:120},
       {url:"/pano/clinic_site/IMG_20260103_093736_00_116.jpg",yaw:156.2,pitch:-9.4,hfov:120},
@@ -227,6 +218,61 @@ const SECTIONS = {
       {url:"/pano/clinic_site/IMG_20260103_093846_00_119.jpg",yaw:-175,pitch:3.5,hfov:120},
       {url:"/pano/clinic_site/IMG_20260103_093904_00_120.jpg",yaw:104.1,pitch:-1.5,hfov:120},
       {url:"/pano/clinic_site/IMG_20260103_093926_00_121.jpg",yaw:100.4,pitch:-2.9,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_093950_00_122.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_094013_00_123.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_094031_00_124.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_094103_00_125.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_094153_00_126.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_094254_00_127.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_094314_00_128.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_094332_00_129.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_094353_00_130.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_094414_00_131.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_094436_00_132.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_094500_00_133.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_094520_00_134.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_094541_00_135.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_094603_00_136.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_094649_00_137.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_095120_00_138.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_095147_00_139.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_095205_00_140.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_095228_00_141.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_095247_00_142.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_095312_00_143.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_095348_00_144.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_095416_00_145.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_095438_00_146.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_095500_00_147.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_095528_00_148.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_095552_00_149.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_095616_00_150.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_095643_00_151.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_095710_00_152.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_095729_00_153.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_095757_00_154.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_095822_00_155.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_095843_00_156.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_095908_00_157.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_095935_00_158.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_100018_00_159.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_100107_00_160.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_100205_00_161.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_100254_00_162.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_100502_00_163.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_100524_00_164.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_100545_00_165.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_100611_00_166.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_100633_00_167.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_100655_00_168.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_100715_00_169.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_100745_00_170.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_101011_00_171.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_101034_00_172.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_101135_00_173.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_101215_00_174.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_101241_00_175.jpg",yaw:0,pitch:0,hfov:120},
+      {url:"/pano/clinic_site/IMG_20260103_101304_00_176.jpg",yaw:0,pitch:0,hfov:120},
       {url:"/pano/clinic_site/IMG_20260111_040643_00_208.jpg",yaw:-20.9,pitch:1.9,hfov:120},
       {url:"/pano/clinic_site/IMG_20260111_040702_00_209.jpg",yaw:0,pitch:0,hfov:110},
       {url:"/pano/clinic_site/IMG_20260111_040734_00_210.jpg",yaw:19,pitch:8.1,hfov:120},
@@ -236,9 +282,154 @@ const SECTIONS = {
 };
 
 const ALL_LOCATIONS = Object.entries(SECTIONS).flatMap(([sk, sec]) =>
-  sec.subsections.map(sub => ({ ...sub, sectionKey: sk, sectionColor: sec.color, sectionIcon: sec.icon, sectionLabel: sec.label }))
+  sec.subsections.map(sub => ({ ...sub, droneVideoUrl: "/drone/" + sub.id + ".m4v", sectionKey: sk, sectionColor: sec.color, sectionIcon: sec.icon, sectionLabel: sec.label }))
 );
 const LABELED_LOCATIONS = ALL_LOCATIONS.filter(l => l.realCoords);
+
+// ─── Focus Mode label helpers ────────────────────────────────────────────────
+function buildFocusDot() {
+  const DPR = 2, r = 5 * DPR;
+  const cv = document.createElement("canvas");
+  cv.width = r * 4; cv.height = r * 4;
+  const ctx = cv.getContext("2d");
+  const cx = cv.width / 2, cy = cv.height / 2;
+  // Glow
+  const grad = ctx.createRadialGradient(cx, cy, r * 0.3, cx, cy, r * 2);
+  grad.addColorStop(0, "rgba(96,165,250,0.6)");
+  grad.addColorStop(0.5, "rgba(96,165,250,0.15)");
+  grad.addColorStop(1, "rgba(96,165,250,0)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  // Core dot
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = "#60A5FA";
+  ctx.fill();
+  ctx.strokeStyle = "#fff";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  const img = document.createElement("img");
+  img.src = cv.toDataURL(); img.width = cv.width / DPR; img.height = cv.height / DPR;
+  return img;
+}
+
+function buildFocusLabel(name) {
+  const DPR = 2;
+  const cv = document.createElement("canvas");
+  const ctx = cv.getContext("2d");
+  const fontSize = 9 * DPR;
+  ctx.font = `700 ${fontSize}px "Roboto Slab",Georgia,serif`;
+  const text = name.toUpperCase();
+  const tw = ctx.measureText(text).width;
+  const padX = 8 * DPR, padY = 5 * DPR;
+  const dotR = 5 * DPR;
+  const gap = 5 * DPR;
+  const tagW = tw + padX * 2;
+  const tagH = fontSize + padY * 2;
+  // FIX: pad left so dot sits at the horizontal center of the canvas
+  const leftPad = gap + tagW;
+  cv.width = leftPad + dotR * 2 + gap + tagW;
+  cv.height = Math.max(dotR * 4, tagH);
+  const dotCx = leftPad + dotR;
+  const cy = cv.height / 2;
+  // Glow
+  const grad = ctx.createRadialGradient(dotCx, cy, dotR * 0.3, dotCx, cy, dotR * 2);
+  grad.addColorStop(0, "rgba(96,165,250,0.6)");
+  grad.addColorStop(1, "rgba(96,165,250,0)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(dotCx - dotR * 2, 0, dotR * 6, cv.height);
+  // Core dot
+  ctx.beginPath();
+  ctx.arc(dotCx, cy, dotR, 0, Math.PI * 2);
+  ctx.fillStyle = "#60A5FA";
+  ctx.fill();
+  ctx.strokeStyle = "#fff";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  // Tag bg
+  const tx = leftPad + dotR * 2 + gap;
+  const ty = (cv.height - tagH) / 2;
+  ctx.fillStyle = "rgba(30,60,120,0.85)";
+  ctx.beginPath();
+  ctx.roundRect(tx, ty, tagW, tagH, 4 * DPR);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(96,165,250,0.5)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.font = `700 ${fontSize}px "Roboto Slab",Georgia,serif`;
+  ctx.fillStyle = "#fff";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, tx + padX, cy);
+  const img = document.createElement("img");
+  img.src = cv.toDataURL(); img.width = cv.width / DPR; img.height = cv.height / DPR;
+  return img;
+}
+
+function buildCornerTag(name) {
+  const DPR = 2;
+  const cv = document.createElement("canvas");
+  const ctx = cv.getContext("2d");
+  const fontSize = 9 * DPR;
+  ctx.font = `800 ${fontSize}px "Roboto Slab",Georgia,serif`;
+  const text = name.toUpperCase();
+  const tw = ctx.measureText(text).width;
+  const padX = 8 * DPR, padY = 5 * DPR;
+  const dotR = 4 * DPR;
+  const gap = 5 * DPR;
+  const tagW = tw + padX * 2;
+  const tagH = fontSize + padY * 2;
+  // FIX: pad left so dot sits at the horizontal center of the canvas
+  const leftPad = gap + tagW;
+  cv.width = leftPad + dotR * 2 + gap + tagW;
+  cv.height = Math.max(dotR * 2, tagH);
+  const dotCx = leftPad + dotR;
+  const cy = cv.height / 2;
+  ctx.beginPath();
+  ctx.arc(dotCx, cy, dotR, 0, Math.PI * 2);
+  ctx.fillStyle = "#cedc00";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(0,0,0,0.5)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  const tx = leftPad + dotR * 2 + gap;
+  const ty = (cv.height - tagH) / 2;
+  ctx.fillStyle = "rgba(60,60,60,0.85)";
+  ctx.beginPath();
+  ctx.roundRect(tx, ty, tagW, tagH, 4 * DPR);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(206,220,0,0.5)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.font = `800 ${fontSize}px "Roboto Slab",Georgia,serif`;
+  ctx.fillStyle = "#fff";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, tx + padX, cy);
+  const img = document.createElement("img");
+  img.src = cv.toDataURL(); img.width = cv.width / DPR; img.height = cv.height / DPR;
+  return img;
+}
+
+// ─── Clinic Site Focus Mode data ─────────────────────────────────────────────
+const CLINIC_FOCUS_POINTS = [
+  {id:"cfp_nw1", name:"NW Corner",              file:"North_West_1.jpg", lat:10.6876335, lng:-2.5625671, alt:284.04, boundary:true, corner:true, markerAlt:15},
+  {id:"cfp_nw2", name:"N Perimeter 1",           file:"North_West_2.jpg", lat:10.688203,  lng:-2.5618939, alt:284.04, boundary:true, corner:false, markerAlt:25},
+  {id:"cfp_nm1", name:"N Perimeter 2",            file:"North_Mid_1.jpg",  lat:10.6881535, lng:-2.5617053, alt:283.71, boundary:true, corner:false, markerAlt:15},
+  {id:"cfp_em1", name:"NE Corner",               file:"East_Mid_1.jpg",   lat:10.6885046, lng:-2.5600391, alt:279.04, boundary:true, corner:true, markerAlt:15},
+  {id:"cfp_se1", name:"SE Corner",               file:"South_East_1.jpg", lat:10.6875696, lng:-2.5596246, alt:281.55, boundary:true, corner:true, markerAlt:15},
+  {id:"cfp_sm1", name:"S Middle – Wing 1",        file:"South_Mid_1.jpg",  lat:10.6872822, lng:-2.561586,  alt:284.02, boundary:true, corner:false, markerAlt:15},
+  {id:"cfp_sw2", name:"S Perimeter 1",            file:"South_West_2.jpg", lat:10.6870691, lng:-2.5616727, alt:284.18, boundary:true, corner:false, markerAlt:25},
+  {id:"cfp_sw1", name:"SW Corner",               file:"South_West_1.jpg", lat:10.6872123, lng:-2.5622349, alt:284.23, boundary:true, corner:true, markerAlt:15},
+  {id:"cfp_wm1", name:"West – Front",             file:"West_Mid_1.jpg",   lat:10.6875685, lng:-2.5619304, alt:284.04, boundary:true, corner:false, markerAlt:15},
+  // Inner points (not part of boundary line)
+  {id:"cfp_nm2", name:"NE Corner – Wing 1",       file:"North_Mid_2.jpg",  lat:10.687952,  lng:-2.5615754, alt:283.71, boundary:false, corner:false, markerAlt:35},
+  {id:"cfp_nm3", name:"N Middle – Wing 1",        file:"North_Mid_3.jpg",  lat:10.6879282, lng:-2.5616719, alt:283.73, boundary:false, corner:false, markerAlt:15},
+  {id:"cfp_nm4", name:"NW Middle – Wing 1",       file:"North_Mid_4.jpg",  lat:10.6879207, lng:-2.5617632, alt:283.44, boundary:false, corner:false, markerAlt:55},
+  {id:"cfp_em2", name:"East Mid 2",              file:"East_Mid_2.jpg",   lat:10.6879,    lng:-2.5614,    alt:283.5,  boundary:false, corner:false, markerAlt:45},
+];
+// Boundary order (clockwise) — indices into CLINIC_FOCUS_POINTS
+const CLINIC_BOUNDARY_IDS = ["cfp_nw1","cfp_nw2","cfp_nm1","cfp_em1","cfp_se1","cfp_sm1","cfp_sw2","cfp_sw1","cfp_wm1"];
+// Center of clinic site for camera
+const CLINIC_CENTER = { lat: 10.6876766, lng: -2.5615968 };
 
 // ─── Label Image Builder ─────────────────────────────────────────────────────
 function buildLabelImg(name, sectionLabel, icon, color, scale) {
@@ -286,7 +477,6 @@ function staggerAltitudes(locations) {
 }
 
 // ─── MarkerManager ───────────────────────────────────────────────────────────
-// Single class that owns ALL marker lifecycle: create, destroy, LOD, isolate.
 class MarkerManager {
   constructor(map3d, locations, MarkerClass, onSelect) {
     this.map3d = map3d;
@@ -294,19 +484,17 @@ class MarkerManager {
     this.MarkerClass = MarkerClass;
     this.onSelect = onSelect;
     this.altitudes = staggerAltitudes(locations);
-    this.live = [];           // { el, loc, idx, attached }
+    this.live = [];
     this.sectionFilter = null;
-    this.frozen = false;      // true = LOD polling paused (isolation mode)
+    this.frozen = false;
     this.lastRange = -1;
     this.rafId = null;
     this._build();
     this._startLOD();
   }
 
-  // LOD thresholds per tier
   static LOD = { 1: Infinity, 2: 2000, 3: 800 };
 
-  // Create one marker element
   _create(loc, idx) {
     const alt = this.altitudes[idx];
     const el = new this.MarkerClass({
@@ -322,7 +510,6 @@ class MarkerManager {
     return el;
   }
 
-  // Build all markers and attach to map
   _build() {
     this._destroyAll();
     for (let i = 0; i < this.locations.length; i++) {
@@ -333,7 +520,6 @@ class MarkerManager {
     }
   }
 
-  // Remove all marker elements from DOM
   _destroyAll() {
     for (const m of this.live) {
       try { m.el.remove(); } catch (_) {}
@@ -341,7 +527,6 @@ class MarkerManager {
     this.live = [];
   }
 
-  // Attach or detach a single marker
   _attach(m) {
     if (!m.attached) { this.map3d.appendChild(m.el); m.attached = true; }
   }
@@ -349,7 +534,6 @@ class MarkerManager {
     if (m.attached) { try { m.el.remove(); } catch (_) {} m.attached = false; }
   }
 
-  // Apply LOD + section filter visibility
   _applyLOD(range) {
     if (this.frozen) return;
     this.lastRange = range;
@@ -361,7 +545,6 @@ class MarkerManager {
     }
   }
 
-  // rAF loop for LOD
   _startLOD() {
     const tick = () => {
       this.rafId = requestAnimationFrame(tick);
@@ -375,8 +558,6 @@ class MarkerManager {
     this._applyLOD(this.map3d.range || 1500);
   }
 
-  // ── Public API ──
-
   setSection(key) {
     this.sectionFilter = key || null;
     if (this.frozen) { this.frozen = false; this._build(); }
@@ -386,7 +567,6 @@ class MarkerManager {
 
   clearSection() { this.setSection(null); }
 
-  // Destroy everything, rebuild only the one with keepId
   isolate(keepId) {
     this.frozen = true;
     this._destroyAll();
@@ -401,12 +581,16 @@ class MarkerManager {
     }
   }
 
-  // Rebuild everything and resume LOD
   restore() {
     this.frozen = false;
     this._build();
     this.lastRange = -1;
     this._applyLOD(this.map3d.range || 1500);
+  }
+
+  hideAll() {
+    this.frozen = true;
+    this._destroyAll();
   }
 
   dispose() {
@@ -416,7 +600,6 @@ class MarkerManager {
 }
 
 // ─── CameraController ────────────────────────────────────────────────────────
-// Single place for all camera movement: fly, orbit, reset, stop.
 class CameraController {
   constructor(map3dRef) {
     this.map3dRef = map3dRef;
@@ -457,9 +640,7 @@ class CameraController {
 }
 
 // ─── PanoViewer Component ────────────────────────────────────────────────────
-// photoUrls can be strings OR objects: { url, yaw, pitch, hfov }
 function PanoViewer({ photoUrl, photoUrls, locationName, tall }) {
-  // Normalize: always work with { url, yaw, pitch, hfov } objects
   const photos = (photoUrls?.length > 0 ? photoUrls : photoUrl ? [photoUrl] : []).map(p =>
     typeof p === "string" ? { url: p, yaw: 0, pitch: 0, hfov: 110 } : { yaw: 0, pitch: 0, hfov: 110, ...p }
   );
@@ -486,7 +667,6 @@ function PanoViewer({ photoUrl, photoUrls, locationName, tall }) {
         yaw: p.yaw, pitch: p.pitch, hfov: p.hfov,
         compass: true, showZoomCtrl: true, showFullscreenCtrl: true, title: locationName,
       });
-      // Poll for live coordinates — write to DOM directly, no state updates
       if (coordsRef.current) cancelAnimationFrame(coordsRef.current);
       const poll = () => {
         if (vRef.current && overlayRef.current) {
@@ -521,7 +701,6 @@ function PanoViewer({ photoUrl, photoUrls, locationName, tall }) {
     <div style={{ position: "relative", width: "100%" }}>
       <div style={{ width: "100%", height: h, borderRadius: 8, overflow: "hidden", border: "1px solid " + C.border, position: "relative" }}>
         <div ref={ref} style={{ width: "100%", height: "100%" }} />
-        {/* Framing overlay */}
         <div style={{ position: "absolute", top: 8, left: 8, zIndex: 1000, background: "rgba(0,0,0,0.75)", borderRadius: 6, padding: "6px 10px", fontFamily: "monospace", fontSize: 11, color: "#0f0", display: "flex", gap: 12, alignItems: "center", pointerEvents: "auto" }}>
           <span ref={overlayRef}>yaw:0  pitch:0  hfov:110</span>
           <button onClick={copyCoords} style={{ padding: "2px 8px", borderRadius: 4, border: "1px solid #0f04", background: copied ? "#0f03" : "transparent", color: "#0f0", fontSize: 10, cursor: "pointer", fontFamily: "monospace" }}>{copied ? "✓ copied" : "copy"}</button>
@@ -570,8 +749,7 @@ function BoreholeDataCard({ data }) {
   );
 }
 
-// ─── PanoVideo Component (Three.js 360° video player) ────────────────────────
-// Loads Three.js from CDN, renders equirectangular video on inverted sphere.
+// ─── PanoVideo Component ─────────────────────────────────────────────────────
 function PanoVideo({ videoUrls, locationName, tall, btnHidden, onToggleHide }) {
   const videos = videoUrls || [];
   const [idx, setIdx] = useState(0);
@@ -579,14 +757,13 @@ function PanoVideo({ videoUrls, locationName, tall, btnHidden, onToggleHide }) {
   const [showBtn, setShowBtn] = useState(true);
   const btnTimer = useRef(null);
   const containerRef = useRef(null);
-  const stateRef = useRef(null); // { renderer, scene, camera, video, animId }
+  const stateRef = useRef(null);
   const dragRef = useRef(false);
   const current = videos[idx] || null;
   const h = tall ? "calc(100vh - 220px)" : "240px";
 
   useEffect(() => { setIdx(0); setPlaying(false); setShowBtn(true); if (btnTimer.current) clearTimeout(btnTimer.current); if (onToggleHide) onToggleHide(false); }, [locationName]);
 
-  // Cleanup helper
   const cleanup = () => {
     const s = stateRef.current;
     if (!s) return;
@@ -600,49 +777,35 @@ function PanoVideo({ videoUrls, locationName, tall, btnHidden, onToggleHide }) {
   useEffect(() => {
     if (!current || !containerRef.current) return;
     cleanup();
-
     const url = typeof current === "string" ? current : current.url;
-
     (async () => {
-      // Load Three.js from CDN if not loaded
       if (!window.THREE) {
         await new Promise(r => { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"; s.onload = r; document.head.appendChild(s); });
       }
       const THREE = window.THREE;
       const container = containerRef.current;
       const w = container.clientWidth, ht = container.clientHeight;
-
-      // Renderer
       const renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(w, ht);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       container.appendChild(renderer.domElement);
-
-      // Scene + Camera
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(75, w / ht, 0.1, 1000);
-
-      // Video element
       const video = document.createElement("video");
       video.crossOrigin = "anonymous";
       video.playsInline = true;
       video.loop = true;
       video.muted = false;
       video.src = url;
-
-      // Texture + Sphere (inside-out)
       const texture = new THREE.VideoTexture(video);
       texture.minFilter = THREE.LinearFilter;
       const geo = new THREE.SphereGeometry(500, 60, 40);
-      geo.scale(-1, 1, 1); // Invert for inside view
+      geo.scale(-1, 1, 1);
       const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: texture }));
       scene.add(mesh);
-
-      // Mouse drag controls
       let isDragging = false, prevX = 0, prevY = 0;
       let lon = 0, lat = 0;
       let startX = 0, startY = 0, moved = false;
-
       const onDown = (e) => { isDragging = true; moved = false; const p = e.touches ? e.touches[0] : e; prevX = p.clientX; prevY = p.clientY; startX = p.clientX; startY = p.clientY; };
       const onMove = (e) => {
         if (!isDragging) return;
@@ -655,7 +818,6 @@ function PanoVideo({ videoUrls, locationName, tall, btnHidden, onToggleHide }) {
         prevX = p.clientX; prevY = p.clientY;
       };
       const onUp = () => { if (!moved && isDragging) { dragRef.current = true; } isDragging = false; };
-
       renderer.domElement.addEventListener("mousedown", onDown);
       renderer.domElement.addEventListener("mousemove", onMove);
       renderer.domElement.addEventListener("mouseup", onUp);
@@ -663,24 +825,16 @@ function PanoVideo({ videoUrls, locationName, tall, btnHidden, onToggleHide }) {
       renderer.domElement.addEventListener("touchstart", onDown, { passive: true });
       renderer.domElement.addEventListener("touchmove", onMove, { passive: true });
       renderer.domElement.addEventListener("touchend", onUp);
-
-      // Render loop
       const state = { renderer, scene, camera, video, animId: null, onResize: null };
       stateRef.current = state;
       const animate = () => {
         state.animId = requestAnimationFrame(animate);
         const phi = THREE.MathUtils.degToRad(90 - lat);
         const theta = THREE.MathUtils.degToRad(lon);
-        camera.lookAt(
-          500 * Math.sin(phi) * Math.cos(theta),
-          500 * Math.cos(phi),
-          500 * Math.sin(phi) * Math.sin(theta)
-        );
+        camera.lookAt(500 * Math.sin(phi) * Math.cos(theta), 500 * Math.cos(phi), 500 * Math.sin(phi) * Math.sin(theta));
         renderer.render(scene, camera);
       };
       animate();
-
-      // Resize
       state.onResize = () => {
         const nw = container.clientWidth, nh = container.clientHeight;
         camera.aspect = nw / nh;
@@ -689,11 +843,9 @@ function PanoVideo({ videoUrls, locationName, tall, btnHidden, onToggleHide }) {
       };
       window.addEventListener("resize", state.onResize);
     })();
-
     return cleanup;
   }, [current, locationName]);
 
-  // Play/pause control
   const togglePlay = (fromFrame) => {
     const s = stateRef.current;
     if (!s?.video) return;
@@ -703,7 +855,7 @@ function PanoVideo({ videoUrls, locationName, tall, btnHidden, onToggleHide }) {
       btnTimer.current = setTimeout(() => setShowBtn(false), 3000);
     } else {
       s.video.pause(); setPlaying(false);
-      if (btnHidden && fromFrame) { /* stay hidden, user will use top bar button */ }
+      if (btnHidden && fromFrame) {}
       else { setShowBtn(true); }
     }
   };
@@ -717,7 +869,6 @@ function PanoVideo({ videoUrls, locationName, tall, btnHidden, onToggleHide }) {
   return (
     <div style={{ position: "relative", width: "100%" }}>
       <div ref={containerRef} onClick={() => { if (dragRef.current) { dragRef.current = false; if (playing || btnHidden) togglePlay(true); } }} style={{ width: "100%", height: h, borderRadius: 8, overflow: "hidden", border: "1px solid " + C.border, background: "#000", cursor: "grab" }} />
-      {/* Center play/pause + hide button */}
       {!btnHidden && (
         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, transition: "opacity 0.5s", opacity: showBtn ? 1 : 0, pointerEvents: showBtn ? "auto" : "none" }}>
           <button onClick={() => togglePlay(false)} style={{ padding: "12px 24px", borderRadius: 980, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.25)", color: "#fff", fontSize: 15, cursor: "pointer", fontFamily: "-apple-system,sans-serif" }}>
@@ -741,7 +892,71 @@ function PanoVideo({ videoUrls, locationName, tall, btnHidden, onToggleHide }) {
   );
 }
 
-// ─── MediaViewer (tabs: Photos / Video) ──────────────────────────────────────
+// ─── DroneIntro ──────────────────────────────────────────────────────────────
+function DroneIntro({ url, locationName, onSkip }) {
+  const videoRef = useRef(null);
+  const [playing, setPlaying] = useState(true);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.play().catch(() => {});
+    const onTime = () => { setProgress(v.currentTime); setDuration(v.duration || 0); };
+    const onEnd = () => onSkip();
+    const onErr = () => onSkip();
+    v.addEventListener("timeupdate", onTime);
+    v.addEventListener("ended", onEnd);
+    v.addEventListener("error", onErr);
+    return () => { v.removeEventListener("timeupdate", onTime); v.removeEventListener("ended", onEnd); v.removeEventListener("error", onErr); v.pause(); };
+  }, [url]);
+
+  const togglePlay = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.paused) { v.play(); setPlaying(true); }
+    else { v.pause(); setPlaying(false); }
+  };
+
+  const seek = (e) => {
+    const v = videoRef.current;
+    if (!v || !duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    v.currentTime = pct * duration;
+  };
+
+  const fmt = (s) => { const m = Math.floor(s / 60); return m + ":" + String(Math.floor(s % 60)).padStart(2, "0"); };
+
+  return (
+    <div style={{ position: "absolute", inset: 0, zIndex: 600, background: "#000", display: "flex", flexDirection: "column" }}>
+      <video ref={videoRef} src={url} playsInline style={{ flex: 1, width: "100%", objectFit: "contain", background: "#000", cursor: "pointer" }} onClick={togglePlay} />
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "16px 20px 20px", background: "linear-gradient(transparent, rgba(0,0,0,0.85))", display: "flex", flexDirection: "column", gap: 10 }}>
+        <div onClick={seek} style={{ width: "100%", height: 4, background: "rgba(255,255,255,0.2)", borderRadius: 2, cursor: "pointer", position: "relative" }}>
+          <div style={{ width: duration ? (progress / duration * 100) + "%" : "0%", height: "100%", background: C.gold, borderRadius: 2, transition: "width 0.1s linear" }} />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <button onClick={togglePlay} style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", color: "#fff", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {playing ? "⏸" : "▶"}
+            </button>
+            <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontFamily: "monospace" }}>{fmt(progress)} / {fmt(duration)}</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "Roboto,sans-serif" }}>{locationName}</span>
+            <button onClick={onSkip} style={{ padding: "8px 20px", borderRadius: 980, background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.25)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "-apple-system,sans-serif" }}>
+              Explore →
+            </button>
+          </div>
+        </div>
+      </div>
+      <button onClick={onSkip} style={{ position: "absolute", top: 16, right: 16, width: 38, height: 38, borderRadius: "50%", background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+    </div>
+  );
+}
+
+// ─── MediaViewer ─────────────────────────────────────────────────────────────
 function MediaViewer({ loc, tall }) {
   const hasPhotos = loc.photoUrls?.length > 0 || loc.photoUrl;
   const hasVideo = loc.videoUrls?.length > 0;
@@ -751,7 +966,6 @@ function MediaViewer({ loc, tall }) {
   const [activeTab, setActiveTab] = useState(tabs[0] || "photos");
   const [playBtnHidden, setPlayBtnHidden] = useState(false);
 
-  // Reset tab and hidden state when location changes
   useEffect(() => { setActiveTab(tabs[0] || "photos"); setPlayBtnHidden(false); }, [loc.id]);
 
   if (!tabs.length) return (
@@ -763,7 +977,6 @@ function MediaViewer({ loc, tall }) {
 
   return (
     <div>
-      {/* Tabs + inline play button when hidden */}
       {tabs.length > 1 && (
         <div style={{ display: "flex", gap: 4, marginBottom: 10, alignItems: "center" }}>
           {tabs.map(tab => (
@@ -780,7 +993,6 @@ function MediaViewer({ loc, tall }) {
           )}
         </div>
       )}
-      {/* Single tab + inline play when hidden (no tab bar normally shown) */}
       {tabs.length === 1 && playBtnHidden && activeTab === "video" && (
         <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
           <button onClick={() => setPlayBtnHidden(false)}
@@ -806,11 +1018,18 @@ export default function UlloExplorer({ session, profile }) {
   const [showWelcome, setShowWelcome] = useState(true);
   const [showAdmin, setShowAdmin]     = useState(false);
   const [showPanel, setShowPanel]     = useState(false);
+  const [showDroneIntro, setShowDroneIntro] = useState(false);
+  const [droneAvail, setDroneAvail]  = useState({});
+  const [focusMode, setFocusMode]    = useState(false);
+  const [focusPhoto, setFocusPhoto]  = useState(null);
+  const [focusHighlight, setFocusHighlight] = useState(null);
+  const focusMarkersRef = useRef(new Map());
+  const focusPolyRef = useRef(null);
   const [panelMin, setPanelMin]       = useState(false);
-  const [editingField, setEditingField] = useState(null); // null | "name" | "description"
+  const [editingField, setEditingField] = useState(null);
   const [editValue, setEditValue]     = useState("");
-  const [localEdits, setLocalEdits]   = useState({});     // { [locId]: { name?, description? } }
-  const [uploadMode, setUploadMode]   = useState(null);   // null | "photo" | "video"
+  const [localEdits, setLocalEdits]   = useState({});
+  const [uploadMode, setUploadMode]   = useState(null);
   const [uploading, setUploading]     = useState(false);
   const [uploadMsg, setUploadMsg]     = useState("");
   const fileInputRef = useRef(null);
@@ -818,16 +1037,25 @@ export default function UlloExplorer({ session, profile }) {
   const mapRef    = useRef(null);
   const map3dRef  = useRef(null);
   const initRef   = useRef(false);
-  const markers   = useRef(null);  // MarkerManager
-  const camera    = useRef(null);  // CameraController
+  const markers   = useRef(null);
+  const camera    = useRef(null);
 
   const visibleLocs = activeSection ? ALL_LOCATIONS.filter(l => l.sectionKey === activeSection) : ALL_LOCATIONS;
 
-  // ── Actions (each one does ONE thing, calls the right manager) ──
+  useEffect(() => {
+    const ids = ALL_LOCATIONS.map(l => l.id);
+    const avail = {};
+    Promise.all(ids.map(id =>
+      fetch("/drone/" + id + ".m4v", { method: "HEAD" })
+        .then(r => { if (r.ok) avail[id] = true; })
+        .catch(() => {})
+    )).then(() => setDroneAvail(avail));
+  }, []);
 
   const selectLoc = useCallback((loc) => {
     setActiveLoc(loc);
     setShowPanel(false);
+    setShowDroneIntro(false);
     setPanelMin(false);
     markers.current?.isolate(loc.id);
     camera.current?.flyAndOrbit(loc);
@@ -838,12 +1066,23 @@ export default function UlloExplorer({ session, profile }) {
     markers.current?.restore();
     setActiveLoc(null);
     setShowPanel(false);
+    setShowDroneIntro(false);
     setEditingField(null);
     setUploadMode(null);
     setUploadMsg("");
   }, []);
 
   const openPanel = useCallback(() => {
+    if (activeLoc && droneAvail[activeLoc.id]) {
+      setShowDroneIntro(true);
+    } else {
+      setShowPanel(true);
+      setPanelMin(false);
+    }
+  }, [activeLoc, droneAvail]);
+
+  const skipDroneIntro = useCallback(() => {
+    setShowDroneIntro(false);
     setShowPanel(true);
     setPanelMin(false);
   }, []);
@@ -854,6 +1093,7 @@ export default function UlloExplorer({ session, profile }) {
     setActiveSection(key);
     setActiveLoc(null);
     setShowPanel(false);
+    setShowDroneIntro(false);
   }, []);
 
   const resetView = useCallback(() => {
@@ -861,13 +1101,144 @@ export default function UlloExplorer({ session, profile }) {
     markers.current?.restore();
     setActiveLoc(null);
     setShowPanel(false);
+    setShowDroneIntro(false);
+    setFocusMode(false);
+    setFocusPhoto(null);
+    cleanupFocusMarkers();
   }, []);
+
+  const cleanupFocusMarkers = () => {
+    focusMarkersRef.current.forEach(({ el }) => el.remove());
+    focusMarkersRef.current = new Map();
+    if (focusPolyRef.current) { focusPolyRef.current.remove(); focusPolyRef.current = null; }
+  };
+
+  const enterFocusMode = useCallback(() => {
+    setShowPanel(false);
+    setShowDroneIntro(false);
+    setFocusMode(true);
+    setFocusPhoto(null);
+    setFocusHighlight(null);
+    markers.current?.hideAll();
+    const map3d = map3dRef.current;
+    if (map3d) {
+      map3d.flyCameraTo({
+        endCamera: { center: { lat: 10.6877, lng: -2.5616, altitude: 284 }, range: 450, tilt: 0, heading: 0 },
+        durationMillis: 2000,
+      });
+      setTimeout(async () => {
+        const { Marker3DInteractiveElement } = await google.maps.importLibrary("maps3d");
+        try {
+          const coords = CLINIC_BOUNDARY_IDS.map(id => {
+            const p = CLINIC_FOCUS_POINTS.find(fp => fp.id === id);
+            return { lat: p.lat, lng: p.lng, altitude: p.alt + 2 };
+          });
+          coords.push(coords[0]);
+          const poly = document.createElement("gmp-polyline-3d");
+          poly.setAttribute("altitude-mode", "absolute");
+          poly.setAttribute("stroke-color", "#cedc00");
+          poly.setAttribute("stroke-width", "4");
+          const coordsEl = document.createElement("gmp-polyline-3d-coordinates");
+          coordsEl.textContent = coords.map(c => `${c.lat},${c.lng},${c.altitude}`).join(" ");
+          poly.appendChild(coordsEl);
+          map3d.appendChild(poly);
+          focusPolyRef.current = poly;
+        } catch(e) { console.warn("Polyline not supported:", e); }
+        CLINIC_FOCUS_POINTS.forEach(fp => {
+          const marker = new Marker3DInteractiveElement({
+            position: { lat: fp.lat, lng: fp.lng, altitude: fp.markerAlt || 15 },
+            altitudeMode: "RELATIVE_TO_GROUND",
+            extruded: true,
+          });
+          marker.title = fp.name;
+          let img;
+          if (fp.corner) {
+            img = buildCornerTag(fp.name);
+          } else {
+            img = buildFocusDot();
+          }
+          const tmpl = document.createElement("template");
+          tmpl.content.appendChild(img);
+          marker.appendChild(tmpl);
+          marker.addEventListener("gmp-click", (e) => { setFocusHighlight(fp.id); setFocusPhoto(fp); e.stopPropagation(); });
+          map3d.appendChild(marker);
+          focusMarkersRef.current.set(fp.id, { el: marker, fp });
+        });
+      }, 2500);
+    }
+  }, []);
+
+  const exitFocusMode = useCallback(() => {
+    cleanupFocusMarkers();
+    setFocusMode(false);
+    setFocusPhoto(null);
+    setFocusHighlight(null);
+    // Return to the location's detail panel instead of fully exiting
+    if (activeLoc) {
+      markers.current?.isolate(activeLoc.id);
+      camera.current?.flyAndOrbit(activeLoc);
+      setShowPanel(true);
+      setPanelMin(false);
+    } else {
+      camera.current?.resetView();
+      markers.current?.restore();
+    }
+  }, [activeLoc]);
+
+  useEffect(() => {
+    if (!focusMode) return;
+    const map3d = map3dRef.current;
+    if (!map3d) return;
+    focusMarkersRef.current.forEach(({ el, fp }, id) => {
+      if (fp.corner) return;
+      while (el.firstChild) el.removeChild(el.firstChild);
+      const isHighlighted = id === focusHighlight;
+      const img = isHighlighted ? buildFocusLabel(fp.name) : buildFocusDot();
+      const tmpl = document.createElement("template");
+      tmpl.content.appendChild(img);
+      el.appendChild(tmpl);
+      el.position = { lat: fp.lat, lng: fp.lng, altitude: isHighlighted ? 80 : (fp.markerAlt || 15) };
+    });
+  }, [focusHighlight, focusMode]);
+
+  const selectFocusPoint = (fp) => {
+    setFocusHighlight(prev => prev === fp.id ? null : fp.id);
+  };
+
+  const viewFocusPhoto = (fp) => {
+    setFocusPhoto(fp);
+  };
+
+  const focusListOrder = [...CLINIC_FOCUS_POINTS.filter(fp => !fp.corner), ...CLINIC_FOCUS_POINTS.filter(fp => fp.corner)];
+
+  useEffect(() => {
+    if (!focusMode || focusPhoto) return;
+    const onKey = (e) => {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        const curIdx = focusHighlight ? focusListOrder.findIndex(fp => fp.id === focusHighlight) : -1;
+        let next;
+        if (e.key === "ArrowDown") next = curIdx < focusListOrder.length - 1 ? curIdx + 1 : 0;
+        else next = curIdx > 0 ? curIdx - 1 : focusListOrder.length - 1;
+        setFocusHighlight(focusListOrder[next].id);
+      } else if (e.key === "Enter" && focusHighlight) {
+        const fp = focusListOrder.find(fp => fp.id === focusHighlight);
+        if (fp) setFocusPhoto(fp);
+      } else if (e.key === "Escape") {
+        if (focusHighlight) setFocusHighlight(null);
+        else exitFocusMode();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [focusMode, focusPhoto, focusHighlight]);
 
   const navLoc = (dir) => {
     if (!activeLoc) return;
     setEditingField(null);
     setUploadMode(null);
     setUploadMsg("");
+    setShowDroneIntro(false);
     const list = activeSection ? SECTIONS[activeSection].subsections : ALL_LOCATIONS;
     const idx = list.findIndex(l => l.id === activeLoc.id);
     const next = dir === "next" ? (idx + 1) % list.length : (idx - 1 + list.length) % list.length;
@@ -878,8 +1249,6 @@ export default function UlloExplorer({ session, profile }) {
     markers.current?.isolate(full.id);
     camera.current?.flyAndOrbit(full);
   };
-
-  // ── Editing helpers ──
 
   const startEdit = (field) => {
     if (!activeLoc) return;
@@ -897,7 +1266,6 @@ export default function UlloExplorer({ session, profile }) {
       ...prev,
       [activeLoc.id]: { ...prev[activeLoc.id], [editingField]: editValue },
     }));
-    // Also update the SECTIONS source data so it persists across panel open/close
     const sec = SECTIONS[activeLoc.sectionKey];
     if (sec) {
       const sub = sec.subsections.find(s => s.id === activeLoc.id);
@@ -913,12 +1281,9 @@ export default function UlloExplorer({ session, profile }) {
     setEditValue("");
   };
 
-  // Helper: get display value with local edits applied
   const getLocValue = (loc, field) => {
     return localEdits[loc.id]?.[field] ?? loc[field] ?? "";
   };
-
-  // ── Upload helpers ──
 
   const startUpload = (mode) => {
     setUploadMode(mode);
@@ -956,7 +1321,6 @@ export default function UlloExplorer({ session, profile }) {
       results.push(urlData.publicUrl);
     }
 
-    // Update SECTIONS source + activeLoc
     const sec = SECTIONS[activeLoc.sectionKey];
     const sub = sec?.subsections.find(s => s.id === activeLoc.id);
 
@@ -988,8 +1352,6 @@ export default function UlloExplorer({ session, profile }) {
     e.target.value = "";
   };
 
-  // ── Map Init ──
-
   const initMap = useCallback(async (key) => {
     if (!mapRef.current || initRef.current) return;
     initRef.current = true;
@@ -1019,8 +1381,6 @@ export default function UlloExplorer({ session, profile }) {
   useEffect(() => { if (!markers.current) return; activeSection ? markers.current.setSection(activeSection) : markers.current.clearSection(); }, [activeSection]);
   useEffect(() => () => { markers.current?.dispose(); camera.current?.stop(); }, []);
 
-  // ── Render: Restricted User ──
-
   if (profile?.restricted) return (
     <div style={{ width: "100vw", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: C.bg, fontFamily: "Roboto,sans-serif", padding: 24 }}>
       <style>{"@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@300;400;500;700;900&family=Roboto+Slab:wght@400;600;700;900&display=swap');*{margin:0;padding:0;box-sizing:border-box}"}</style>
@@ -1032,8 +1392,6 @@ export default function UlloExplorer({ session, profile }) {
       </div>
     </div>
   );
-
-  // ── Render: API Key Screen ──
 
   if (!apiKey) return (
     <div style={{ width: "100vw", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: C.bg, fontFamily: "Roboto,sans-serif", padding: 24 }}>
@@ -1048,8 +1406,6 @@ export default function UlloExplorer({ session, profile }) {
     </div>
   );
 
-  // ── Render: Main App ──
-
   return (
     <div style={{ width: "100vw", height: "100vh", position: "relative", overflow: "hidden", fontFamily: "Roboto,sans-serif", background: C.bg }}>
       <style>{`
@@ -1063,10 +1419,8 @@ export default function UlloExplorer({ session, profile }) {
         .tb-btn:hover{background:rgba(255,255,255,0.07)!important;color:#fff!important}
       `}</style>
 
-      {/* Map container */}
       <div ref={mapRef} style={{ position: "absolute", inset: 0, zIndex: 1 }} />
 
-      {/* Loading spinner */}
       {mapLoading && (
         <div style={{ position: "absolute", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: C.bg }}>
           <div style={{ width: 48, height: 48, border: "2px solid " + C.blue + "22", borderTopColor: C.blue, borderRadius: "50%", animation: "spin 1s linear infinite" }} />
@@ -1074,18 +1428,15 @@ export default function UlloExplorer({ session, profile }) {
         </div>
       )}
 
-      {/* Unified top bar */}
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 101, height: 52, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", background: "rgba(12,16,22,0.62)", backdropFilter: "blur(40px) saturate(180%)", WebkitBackdropFilter: "blur(40px) saturate(180%)", borderBottom: "1px solid rgba(255,255,255,0.07)", boxShadow: "0 4px 24px rgba(0,0,0,0.35)", pointerEvents: "auto" }}>
-        {/* Left — branding */}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 101, height: 52, display: focusMode ? "none" : "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", background: "rgba(12,16,22,0.62)", backdropFilter: "blur(40px) saturate(180%)", WebkitBackdropFilter: "blur(40px) saturate(180%)", borderBottom: "1px solid rgba(255,255,255,0.07)", boxShadow: "0 4px 24px rgba(0,0,0,0.35)", pointerEvents: "auto" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 0, flexShrink: 0 }}>
           <span style={{ fontSize: 14, color: "#fff", letterSpacing: 2, textTransform: "uppercase", fontWeight: 700, fontFamily: "'Inter',system-ui,sans-serif" }}>Ullo Ghana</span>
           <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)", margin: "0 10px" }} />
           <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", letterSpacing: 2, textTransform: "uppercase", fontWeight: 500, fontFamily: "'Inter',system-ui,sans-serif" }}>EWB–ISU Community Explorer</span>
         </div>
 
-        {/* Center — section tabs */}
         <div style={{ display: "flex", alignItems: "stretch", height: "100%", position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
-          {Object.entries(SECTIONS).map(([key, sec], i, arr) => { const active = activeSection === key; return (
+          {Object.entries(SECTIONS).map(([key, sec]) => { const active = activeSection === key; return (
             <button key={key} onClick={() => changeSection(active ? null : key)}
               className="tb-btn"
               style={{ position: "relative", padding: "0 18px", height: "100%", border: "none", background: active ? "rgba(255,255,255,0.08)" : "transparent", color: active ? "#fff" : "rgba(255,255,255,0.38)", fontSize: 10, fontWeight: 600, letterSpacing: 1.3, textTransform: "uppercase", cursor: "pointer", transition: "all 0.2s", whiteSpace: "nowrap", outline: "none", fontFamily: "'Inter',system-ui,sans-serif" }}>
@@ -1095,7 +1446,6 @@ export default function UlloExplorer({ session, profile }) {
           })}
         </div>
 
-        {/* Right — user info */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", fontFamily: "'Inter',system-ui,sans-serif" }}>{session?.user?.user_metadata?.full_name || session?.user?.email}</div>
@@ -1106,7 +1456,6 @@ export default function UlloExplorer({ session, profile }) {
         </div>
       </div>
 
-      {/* Section sidebar */}
       {activeSection && (
         <div style={{ position: "absolute", top: 60, left: 16, bottom: 24, width: 248, zIndex: 100, pointerEvents: "auto", display: "flex", flexDirection: "column", background: "rgba(10,14,20,0.85)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.5)", overflow: "hidden" }}>
           <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
@@ -1118,7 +1467,7 @@ export default function UlloExplorer({ session, profile }) {
           </div>
           <div className="sb-scroll" style={{ overflowY: "auto", flex: 1, padding: "6px 0" }}>
             {SECTIONS[activeSection].subsections.map((sub, i) => { const isA = activeLoc?.id === sub.id, sec = SECTIONS[activeSection]; return (
-              <button key={sub.id} className="loc-btn" onClick={() => selectLoc({ ...sub, sectionKey: activeSection, sectionColor: sec.color, sectionIcon: sec.icon, sectionLabel: sec.label })}
+              <button key={sub.id} className="loc-btn" onClick={() => selectLoc({ ...sub, droneVideoUrl: "/drone/" + sub.id + ".m4v", sectionKey: activeSection, sectionColor: sec.color, sectionIcon: sec.icon, sectionLabel: sec.label })}
                 style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "9px 14px", border: "none", background: isA ? sec.color + "18" : "transparent", borderLeft: isA ? `2px solid ${sec.color}` : "2px solid transparent", cursor: "pointer", transition: "all 0.15s", textAlign: "left" }}>
                 <div style={{ width: 24, height: 24, borderRadius: "50%", flexShrink: 0, background: isA ? sec.color + "30" : "rgba(255,255,255,0.05)", border: "1px solid " + (isA ? sec.color + "60" : "rgba(255,255,255,0.1)"), display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: isA ? sec.color : "rgba(255,255,255,0.3)", fontWeight: 700 }}>{i + 1}</div>
                 <span style={{ fontSize: 12, color: isA ? "#fff" : "rgba(255,255,255,0.55)", fontWeight: isA ? 600 : 400, lineHeight: 1.3 }}>{sub.name}</span>
@@ -1128,7 +1477,6 @@ export default function UlloExplorer({ session, profile }) {
         </div>
       )}
 
-      {/* Welcome modal */}
       {mapReady && showWelcome && !activeLoc && (
         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", zIndex: 150, textAlign: "center", padding: "36px 40px", maxWidth: 420, background: C.bgCard, backdropFilter: "blur(20px)", border: "1px solid " + C.border, borderRadius: 12, backgroundImage: `radial-gradient(ellipse at 50% 0%, ${C.blue}10 0%, transparent 60%)` }}>
           <h3 style={{ fontFamily: "Roboto Slab,serif", fontSize: 22, color: C.text, margin: "0 0 10px", fontWeight: 900 }}>Welcome to <span style={{ color: C.gold }}>Ullo</span></h3>
@@ -1137,20 +1485,86 @@ export default function UlloExplorer({ session, profile }) {
         </div>
       )}
 
-      {/* Reset view button */}
       <div style={{ position: "absolute", bottom: 24, right: 24, zIndex: 100, pointerEvents: "auto" }}>
         <button onClick={resetView} style={{ padding: "8px 14px", borderRadius: 6, background: C.bgCard, border: "1px solid " + C.border, color: C.blueLight, fontSize: 11, fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase", cursor: "pointer" }}>🏠 Reset View</button>
       </div>
 
-      {/* Orbit overlay — Details + Close buttons */}
-      {activeLoc && !showPanel && (
+      {activeLoc && !showPanel && !showDroneIntro && !focusMode && (
         <div style={{ position: "absolute", bottom: 80, left: "50%", transform: "translateX(-50%)", zIndex: 200, display: "flex", flexDirection: "column", alignItems: "center", gap: 10, pointerEvents: "auto", animation: "fadeSlideUp 0.6s ease both", animationDelay: "1.5s" }}>
           <button onClick={openPanel} style={{ padding: "16px 48px", borderRadius: 980, background: "rgba(255,255,255,0.3)", backdropFilter: "blur(60px) saturate(200%) brightness(1.2)", WebkitBackdropFilter: "blur(60px) saturate(200%) brightness(1.2)", border: "1px solid rgba(255,255,255,0.45)", color: "#fff", fontSize: 16, fontWeight: 600, letterSpacing: 0.3, cursor: "pointer", fontFamily: "-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif", boxShadow: "0 4px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.3)", textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>Details</button>
           <button onClick={closeLoc} style={{ padding: "10px 24px", borderRadius: 980, background: "rgba(0,0,0,0.25)", backdropFilter: "blur(60px) saturate(180%)", WebkitBackdropFilter: "blur(60px) saturate(180%)", border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif", boxShadow: "0 2px 12px rgba(0,0,0,0.2)" }}>Close</button>
         </div>
       )}
 
-      {/* Detail panel — fullscreen or minimized */}
+      {focusMode && (
+        <>
+          <div style={{ position: "absolute", inset: 0, zIndex: 590, pointerEvents: "none", boxShadow: "inset 0 0 120px 60px rgba(0,0,0,0.5), inset 0 0 300px 100px rgba(0,0,0,0.25)", background: "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.3) 100%)" }} />
+          <div style={{ position: "absolute", top: 60, left: 16, bottom: 16, width: 240, zIndex: 600, pointerEvents: "auto", display: "flex", flexDirection: "column", background: "rgba(0,0,0,0.65)", backdropFilter: "blur(16px)", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", overflow: "hidden" }}>
+            <div style={{ padding: "12px 14px 8px", borderBottom: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: C.gold, fontFamily: "Roboto,sans-serif" }}>📍 Site Locations</div>
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "4px 0" }}>
+              {CLINIC_FOCUS_POINTS.filter(fp => !fp.corner).map(fp => {
+                const sel = focusHighlight === fp.id;
+                return (
+                  <div key={fp.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", cursor: "pointer", background: sel ? "rgba(96,165,250,0.15)" : "transparent", borderLeft: sel ? "3px solid #60A5FA" : "3px solid transparent", transition: "all 0.2s" }}
+                    onMouseEnter={() => setFocusHighlight(fp.id)}
+                    onClick={() => viewFocusPhoto(fp)}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#60A5FA", flexShrink: 0, boxShadow: sel ? "0 0 6px #60A5FA" : "none" }} />
+                    <span style={{ fontSize: 11, color: sel ? "#fff" : "rgba(255,255,255,0.6)", fontFamily: "Roboto,sans-serif", fontWeight: sel ? 600 : 400, flex: 1 }}>{fp.name}</span>
+                    {sel && <button onClick={(e) => { e.stopPropagation(); viewFocusPhoto(fp); }} style={{ padding: "3px 8px", borderRadius: 4, background: "rgba(96,165,250,0.25)", border: "1px solid rgba(96,165,250,0.4)", color: "#60A5FA", fontSize: 9, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>360°</button>}
+                  </div>
+                );
+              })}
+              <div style={{ padding: "6px 14px 4px", marginTop: 4 }}>
+                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: "rgba(206,220,0,0.6)", fontFamily: "Roboto,sans-serif" }}>Corner Posts</div>
+              </div>
+              {CLINIC_FOCUS_POINTS.filter(fp => fp.corner).map(fp => {
+                const sel = focusHighlight === fp.id;
+                return (
+                  <div key={fp.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", cursor: "pointer", background: sel ? "rgba(206,220,0,0.1)" : "transparent", borderLeft: sel ? "3px solid #cedc00" : "3px solid transparent", transition: "all 0.2s" }}
+                    onMouseEnter={() => setFocusHighlight(fp.id)}
+                    onClick={() => viewFocusPhoto(fp)}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#cedc00", flexShrink: 0, boxShadow: sel ? "0 0 6px #cedc00" : "none" }} />
+                    <span style={{ fontSize: 11, color: sel ? "#fff" : "rgba(255,255,255,0.6)", fontFamily: "Roboto,sans-serif", fontWeight: sel ? 600 : 400, flex: 1 }}>{fp.name}</span>
+                    {sel && <button onClick={(e) => { e.stopPropagation(); viewFocusPhoto(fp); }} style={{ padding: "3px 8px", borderRadius: 4, background: "rgba(206,220,0,0.2)", border: "1px solid rgba(206,220,0,0.4)", color: "#cedc00", fontSize: 9, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>360°</button>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          <div style={{ position: "absolute", top: 16, right: 16, zIndex: 600, pointerEvents: "auto" }}>
+            <button onClick={exitFocusMode} style={{ padding: "10px 20px", borderRadius: 980, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.25)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "-apple-system,sans-serif" }}>
+              ✕ Exit Focus Mode
+            </button>
+          </div>
+          <div style={{ position: "absolute", top: 16, left: "50%", transform: "translateX(-50%)", zIndex: 600, pointerEvents: "none", textAlign: "center" }}>
+            <div style={{ padding: "8px 20px", borderRadius: 980, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(12px)", border: "1px solid rgba(206,220,0,0.3)" }}>
+              <span style={{ color: C.gold, fontSize: 12, fontWeight: 700, letterSpacing: 1, fontFamily: "Roboto,sans-serif" }}>🔍 FOCUS MODE</span>
+              <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginLeft: 8, fontFamily: "Roboto,sans-serif" }}>Ullo Clinic Site Boundary</span>
+            </div>
+          </div>
+          {focusPhoto && (
+            <div style={{ position: "absolute", inset: 0, zIndex: 700, background: "rgba(0,0,0,0.7)", display: "flex", flexDirection: "column", pointerEvents: "auto" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px", flexShrink: 0 }}>
+                <div>
+                  <h3 style={{ fontFamily: "Roboto Slab,serif", fontSize: 18, fontWeight: 900, color: "#fff", margin: 0 }}>{focusPhoto.name}</h3>
+                  <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "monospace", margin: "4px 0 0" }}>📍 {focusPhoto.lat.toFixed(6)}°N, {Math.abs(focusPhoto.lng).toFixed(6)}°W</p>
+                </div>
+                <button onClick={() => setFocusPhoto(null)} style={{ width: 38, height: 38, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+              </div>
+              <div style={{ flex: 1, padding: "0 20px 20px" }}>
+                <PanoViewer photoUrl={"/pano/clinic_site/" + focusPhoto.file} locationName={focusPhoto.name} tall={true} />
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {activeLoc && showDroneIntro && droneAvail[activeLoc.id] && (
+        <DroneIntro url={activeLoc.droneVideoUrl} locationName={activeLoc.name} onSkip={skipDroneIntro} />
+      )}
+
       {activeLoc && showPanel && (<>
         {!panelMin && <div onClick={closeLoc} style={{ position: "absolute", inset: 0, zIndex: 500, background: "rgba(0,0,0,0.35)", pointerEvents: "auto" }} />}
         <div style={{
@@ -1185,6 +1599,20 @@ export default function UlloExplorer({ session, profile }) {
           </div>
           <div style={{ padding: panelMin ? "0 14px 14px" : "0 24px 24px", overflowY: "auto", flex: 1 }}>
             <p style={{ color: C.textDim, fontSize: 11, fontFamily: "monospace", marginBottom: 12 }}>📍 {activeLoc.lat.toFixed(4)}°N, {Math.abs(activeLoc.lng).toFixed(4)}°W · Jirapa District, Upper West Region</p>
+            {droneAvail[activeLoc.id] && (
+              <button onClick={() => { setShowPanel(false); setShowDroneIntro(true); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 980, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.5)", fontSize: 11, cursor: "pointer", fontFamily: "Roboto,sans-serif", marginBottom: 12, transition: "all 0.2s" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "#fff"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.color = "rgba(255,255,255,0.5)"; }}>
+                🎬 Watch drone flyover
+              </button>
+            )}
+            {activeLoc.id === "c1" && (
+              <button onClick={enterFocusMode} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 980, background: "rgba(206,220,0,0.08)", border: "1px solid rgba(206,220,0,0.25)", color: C.gold, fontSize: 11, cursor: "pointer", fontFamily: "Roboto,sans-serif", marginBottom: 12, marginLeft: droneAvail[activeLoc.id] ? 8 : 0, transition: "all 0.2s" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(206,220,0,0.18)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "rgba(206,220,0,0.08)"; }}>
+                🔍 Focus Mode — Clinic Boundary
+              </button>
+            )}
             <MediaViewer loc={activeLoc} tall={!panelMin} />
             {editingField === "description" ? (
               <div style={{ marginTop: 14 }}>
@@ -1200,7 +1628,6 @@ export default function UlloExplorer({ session, profile }) {
             )}
             {activeLoc.tags?.length > 0 && <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>{activeLoc.tags.map(tag => (<span key={tag} style={{ padding: "2px 8px", borderRadius: 4, fontSize: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.35)" }}>{tag}</span>))}</div>}
             {activeLoc.sectionKey === "boreholes" && activeLoc.data && <BoreholeDataCard data={activeLoc.data} />}
-            {/* Role-gated action buttons */}
             {(canEdit(profile) || canUpload(profile) || isAdmin(profile)) && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 18, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
                 {canEdit(profile) && editingField !== "description" && (
@@ -1223,12 +1650,10 @@ export default function UlloExplorer({ session, profile }) {
                 )}
               </div>
             )}
-            {/* Hidden file input for uploads */}
             <input ref={fileInputRef} type="file" multiple
               accept={uploadMode === "video" ? "video/*" : "image/*"}
               onChange={handleFileSelect}
               style={{ display: "none" }} />
-            {/* Upload status */}
             {uploadMsg && (
               <div style={{ marginTop: 10, padding: "8px 14px", borderRadius: 6, background: uploading ? "rgba(0,101,178,0.12)" : "rgba(59,168,82,0.12)", border: "1px solid " + (uploading ? "rgba(0,101,178,0.3)" : "rgba(59,168,82,0.3)"), fontSize: 12, color: uploading ? C.blueLight : "#5DC87A", fontFamily: "Roboto,sans-serif", display: "flex", alignItems: "center", gap: 8 }}>
                 {uploading && <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(171,202,233,0.3)", borderTopColor: C.blueLight, borderRadius: "50%", animation: "spin 1s linear infinite" }} />}
