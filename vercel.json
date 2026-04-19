@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/pano/:path*",
+      "destination": "https://iraunnurohhyxfwuhmvt.supabase.co/storage/v1/object/public/pano/:path*"
+    },
+    {
+      "source": "/drone/:path*",
+      "destination": "https://iraunnurohhyxfwuhmvt.supabase.co/storage/v1/object/public/pano/drone/:path*"
+    }
+  ]
+}
