@@ -433,26 +433,78 @@ const CLINIC_CENTER = { lat: 10.6876766, lng: -2.5615968 };
 
 // ─── Label Image Builder ─────────────────────────────────────────────────────
 function buildLabelImg(name, sectionLabel, icon, color, scale) {
-  const s = Math.min(scale || 1, 1.4), DPR = 2;
-  const mainPx = Math.round(13 * s), subPx = Math.round(8 * s), pad = 7;
+  const s = Math.max(0.8, Math.min(scale || 1, 1.5));
+  const DPR = 2;
+  const scriptPx = Math.round(29 * s);
+  const metaPx = Math.max(7, Math.round(7 * s));
+  const title = name;
+
   const tmp = document.createElement("canvas").getContext("2d");
-  tmp.font = `900 ${mainPx}px "Roboto Slab",Georgia,serif`;
-  const mw = tmp.measureText(name.toUpperCase()).width;
-  tmp.font = `600 ${subPx}px Roboto,Arial,sans-serif`;
-  const sw = tmp.measureText(`${icon} ${sectionLabel}`.toUpperCase()).width;
-  const cw = Math.max(mw, sw) + pad * 2, ch = mainPx + pad * 1.4;
+  tmp.font = `italic ${scriptPx}px "Brush Script MT","Segoe Script","Lucida Handwriting",cursive`;
+  const titleWidth = tmp.measureText(title).width;
+
+  const cw = Math.ceil(Math.max(titleWidth + 34 * s, 140 * s));
+  const ch = Math.ceil(54 * s);
+
   const cv = document.createElement("canvas");
-  cv.width = cw * DPR; cv.height = ch * DPR;
+  cv.width = cw * DPR;
+  cv.height = ch * DPR;
+
   const ctx = cv.getContext("2d");
   ctx.scale(DPR, DPR);
-  ctx.textAlign = "center"; ctx.textBaseline = "top";
-  ctx.font = `900 ${mainPx}px "Roboto Slab",Georgia,serif`;
-  ctx.shadowColor = color; ctx.shadowBlur = 8; ctx.globalAlpha = 0.7;
-  ctx.fillStyle = color; ctx.fillText(name.toUpperCase(), cw / 2, pad);
-  ctx.shadowBlur = 0; ctx.globalAlpha = 1;
-  ctx.fillStyle = "#ffffff"; ctx.fillText(name.toUpperCase(), cw / 2, pad);
+
+  const titleX = 16 * s;
+  const titleY = 28 * s;
+
+  // Soft shadow so the signature stays readable over satellite imagery.
+  ctx.font = `italic ${scriptPx}px "Brush Script MT","Segoe Script","Lucida Handwriting",cursive`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
+  ctx.shadowBlur = 8 * s;
+  ctx.shadowOffsetY = 2 * s;
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillText(title, titleX, titleY);
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+
+  // Small editorial category label.
+  ctx.font = `700 ${metaPx}px Arial,sans-serif`;
+  ctx.fillStyle = "rgba(255,255,255,0.86)";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText((sectionLabel || "ULLO").toUpperCase(), titleX + 2 * s, 10 * s);
+
+  // Brush-like underline flourish.
+  const underlineStart = titleX + 5 * s;
+  const underlineEnd = Math.min(cw - 8 * s, titleX + titleWidth - 2 * s);
+  const underlineY = 42 * s;
+
+  ctx.strokeStyle = color || "#FFFFFF";
+  ctx.lineWidth = Math.max(1.5, 2 * s);
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(underlineStart, underlineY);
+  ctx.bezierCurveTo(
+    underlineStart + (underlineEnd - underlineStart) * 0.35,
+    underlineY + 4 * s,
+    underlineStart + (underlineEnd - underlineStart) * 0.72,
+    underlineY - 4 * s,
+    underlineEnd,
+    underlineY - 1 * s
+  );
+  ctx.stroke();
+
+  // Small accent mark at the end of the flourish.
+  ctx.fillStyle = color || "#FFFFFF";
+  ctx.beginPath();
+  ctx.arc(underlineEnd + 4 * s, underlineY - 1 * s, Math.max(1.5, 2 * s), 0, Math.PI * 2);
+  ctx.fill();
+
   const img = document.createElement("img");
-  img.src = cv.toDataURL("image/png"); img.width = cw; img.height = ch;
+  img.src = cv.toDataURL("image/png");
+  img.width = cw;
+  img.height = ch;
   return img;
 }
 
