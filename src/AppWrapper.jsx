@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import Auth from "./Auth";
 import UlloExplorer from "./App";
+import { GLOBAL_CSS } from "./theme";
 
 export default function AppWrapper() {
   var [session, setSession] = useState(null);
@@ -40,18 +41,25 @@ export default function AppWrapper() {
   if (session && session.user.email && !session.user.email.endsWith("@iastate.edu")) {
     supabase.auth.signOut();
     return (
-      <div style={{ width:"100vw", height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"#0D1117", color:"#ECEFF4", fontFamily:"Roboto,sans-serif", flexDirection:"column", gap:12 }}>
-        <p style={{ fontSize:16 }}>Access restricted to @iastate.edu accounts.</p>
-        <button onClick={() => supabase.auth.signOut()} style={{ padding:"8px 20px", background:"#0065b2", border:"none", borderRadius:6, color:"#fff", cursor:"pointer" }}>Back to Sign In</button>
+      <div className="px" style={{ width:"100vw", height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"var(--app)", padding:24 }}>
+        <style>{GLOBAL_CSS}</style>
+        <div className="px-panel" style={{ maxWidth:400, width:"100%" }}>
+          <div className="px-bar"><span className="px-sq" style={{ background:"var(--red)" }} /><span className="px-title">Access denied</span></div>
+          <div style={{ padding:16, display:"flex", flexDirection:"column", gap:12 }}>
+            <div className="px-callout err">Access is restricted to @iastate.edu accounts.</div>
+            <button className="px-btn" style={{ alignSelf:"flex-start" }} onClick={() => supabase.auth.signOut()}>← Back to sign in</button>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div style={{ width:"100vw", height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"#0D1117" }}>
-        <div style={{ width:40, height:40, border:"2px solid #0065b222", borderTopColor:"#0065b2", borderRadius:"50%", animation:"spin 1s linear infinite" }} />
-        <style>{"@keyframes spin{to{transform:rotate(360deg)}}"}</style>
+      <div className="px" style={{ width:"100vw", height:"100vh", display:"flex", flexDirection:"column", gap:14, alignItems:"center", justifyContent:"center", background:"var(--app)" }}>
+        <style>{GLOBAL_CSS}</style>
+        <div className="px-spin" />
+        <div className="px-label">Authenticating</div>
       </div>
     );
   }

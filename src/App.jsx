@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "./supabase";
 import AdminPanel from "./AdminPanel";
+import { createPortal } from "react-dom";
+import { C, GLOBAL_CSS } from "./theme";
+import { WATER_TESTS, WATER_SITES, WATER_PARAMS, WATER_XLSX_URL } from "./waterTests";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -23,14 +26,7 @@ function isAdmin(profile) {
   return profile?.role === "admin";
 }
 
-const C = {
-  blue:"#0065b2", blueLight:"#abcae9", lime:"#cedc00", brown:"#3d3935",
-  orange:"#b36924", gold:"#D4A843",
-  bg:"#0D1117", bgCard:"rgba(13,17,23,0.96)", bgPanel:"rgba(0,101,178,0.06)",
-  surface:"rgba(255,255,255,0.04)", border:"rgba(0,101,178,0.2)",
-  borderSubtle:"rgba(255,255,255,0.06)", text:"#ECEFF4",
-  textMuted:"rgba(171,202,233,0.7)", textDim:"rgba(171,202,233,0.4)",
-};
+// Palette and component styles live in theme.js
 
 // ─── Location Data ───────────────────────────────────────────────────────────
 const SECTIONS = {
@@ -287,38 +283,64 @@ const ALL_LOCATIONS = Object.entries(SECTIONS).flatMap(([sk, sec]) =>
 const LABELED_LOCATIONS = ALL_LOCATIONS.filter(l => l.realCoords);
 
 // ─── Focus Mode label helpers ────────────────────────────────────────────────
+// ── Map label rendering ──
+// The 3D map draws <img> labels at their raw pixel size, so pixel density and
+// on-map size are tied together in "img" mode (2 = the normal label size).
+// "svg" mode wraps a 4x-density image in an SVG with an explicit size, which
+// may let the map show it sharper at the same size. Flip to "svg" to try it;
+// if labels disappear or change size, set it back to "img".
+const LABEL_MODE = "svg";
+const LABEL_SCALE = 2;                                   // on-map px per design px (raise to ~2.4 for bigger, sharper labels)
+const LABEL_DPR = LABEL_MODE === "svg" ? 4 : LABEL_SCALE; // canvas px per design px
+
+function finalizeLabel(cv, dpr) {
+  const url = cv.toDataURL("image/png");
+  const w = Math.round(cv.width / dpr * LABEL_SCALE), h = Math.round(cv.height / dpr * LABEL_SCALE);
+  if (LABEL_MODE === "svg") {
+    const NS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("width", w); svg.setAttribute("height", h);
+    svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+    const im = document.createElementNS(NS, "image");
+    im.setAttribute("href", url); im.setAttribute("width", w); im.setAttribute("height", h);
+    svg.appendChild(im);
+    return svg;
+  }
+  const img = document.createElement("img");
+  img.src = url; img.width = w; img.height = h;
+  return img;
+}
+
 function buildFocusDot() {
-  const DPR = 2, r = 5 * DPR;
+  const DPR = LABEL_DPR, r = 5 * DPR;
   const cv = document.createElement("canvas");
   cv.width = r * 4; cv.height = r * 4;
   const ctx = cv.getContext("2d");
   const cx = cv.width / 2, cy = cv.height / 2;
   // Glow
   const grad = ctx.createRadialGradient(cx, cy, r * 0.3, cx, cy, r * 2);
-  grad.addColorStop(0, "rgba(96,165,250,0.6)");
-  grad.addColorStop(0.5, "rgba(96,165,250,0.15)");
-  grad.addColorStop(1, "rgba(96,165,250,0)");
+  grad.addColorStop(0, "rgba(76,144,240,0.55)");
+  grad.addColorStop(0.5, "rgba(76,144,240,0.14)");
+  grad.addColorStop(1, "rgba(76,144,240,0)");
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, cv.width, cv.height);
   // Core dot
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fillStyle = "#60A5FA";
+  ctx.fillStyle = "#4C90F0";
   ctx.fill();
   ctx.strokeStyle = "#fff";
   ctx.lineWidth = 1.5;
   ctx.stroke();
-  const img = document.createElement("img");
-  img.src = cv.toDataURL(); img.width = cv.width / DPR; img.height = cv.height / DPR;
-  return img;
+  return finalizeLabel(cv, DPR);
 }
 
 function buildFocusLabel(name) {
-  const DPR = 2;
+  const DPR = LABEL_DPR;
   const cv = document.createElement("canvas");
   const ctx = cv.getContext("2d");
   const fontSize = 9 * DPR;
-  ctx.font = `700 ${fontSize}px "Roboto Slab",Georgia,serif`;
+  ctx.font = `600 ${fontSize}px Inter,"Segoe UI",Roboto,Arial,sans-serif`;
   const text = name.toUpperCase();
   const tw = ctx.measureText(text).width;
   const padX = 8 * DPR, padY = 5 * DPR;
@@ -334,14 +356,14 @@ function buildFocusLabel(name) {
   const cy = cv.height / 2;
   // Glow
   const grad = ctx.createRadialGradient(dotCx, cy, dotR * 0.3, dotCx, cy, dotR * 2);
-  grad.addColorStop(0, "rgba(96,165,250,0.6)");
-  grad.addColorStop(1, "rgba(96,165,250,0)");
+  grad.addColorStop(0, "rgba(76,144,240,0.55)");
+  grad.addColorStop(1, "rgba(76,144,240,0)");
   ctx.fillStyle = grad;
   ctx.fillRect(dotCx - dotR * 2, 0, dotR * 6, cv.height);
   // Core dot
   ctx.beginPath();
   ctx.arc(dotCx, cy, dotR, 0, Math.PI * 2);
-  ctx.fillStyle = "#60A5FA";
+  ctx.fillStyle = "#4C90F0";
   ctx.fill();
   ctx.strokeStyle = "#fff";
   ctx.lineWidth = 2;
@@ -349,28 +371,26 @@ function buildFocusLabel(name) {
   // Tag bg
   const tx = leftPad + dotR * 2 + gap;
   const ty = (cv.height - tagH) / 2;
-  ctx.fillStyle = "rgba(30,60,120,0.85)";
+  ctx.fillStyle = "rgba(28,33,39,0.92)";
   ctx.beginPath();
-  ctx.roundRect(tx, ty, tagW, tagH, 4 * DPR);
+  ctx.roundRect(tx, ty, tagW, tagH, 2 * DPR);
   ctx.fill();
-  ctx.strokeStyle = "rgba(96,165,250,0.5)";
+  ctx.strokeStyle = "rgba(76,144,240,0.7)";
   ctx.lineWidth = 1.5;
   ctx.stroke();
-  ctx.font = `700 ${fontSize}px "Roboto Slab",Georgia,serif`;
+  ctx.font = `600 ${fontSize}px Inter,"Segoe UI",Roboto,Arial,sans-serif`;
   ctx.fillStyle = "#fff";
   ctx.textBaseline = "middle";
   ctx.fillText(text, tx + padX, cy);
-  const img = document.createElement("img");
-  img.src = cv.toDataURL(); img.width = cv.width / DPR; img.height = cv.height / DPR;
-  return img;
+  return finalizeLabel(cv, DPR);
 }
 
 function buildCornerTag(name) {
-  const DPR = 2;
+  const DPR = LABEL_DPR;
   const cv = document.createElement("canvas");
   const ctx = cv.getContext("2d");
   const fontSize = 9 * DPR;
-  ctx.font = `800 ${fontSize}px "Roboto Slab",Georgia,serif`;
+  ctx.font = `600 ${fontSize}px Inter,"Segoe UI",Roboto,Arial,sans-serif`;
   const text = name.toUpperCase();
   const tw = ctx.measureText(text).width;
   const padX = 8 * DPR, padY = 5 * DPR;
@@ -386,29 +406,28 @@ function buildCornerTag(name) {
   const cy = cv.height / 2;
   ctx.beginPath();
   ctx.arc(dotCx, cy, dotR, 0, Math.PI * 2);
-  ctx.fillStyle = "#cedc00";
+  ctx.fillStyle = "#FBB360";
   ctx.fill();
   ctx.strokeStyle = "rgba(0,0,0,0.5)";
   ctx.lineWidth = 1.5;
   ctx.stroke();
   const tx = leftPad + dotR * 2 + gap;
   const ty = (cv.height - tagH) / 2;
-  ctx.fillStyle = "rgba(60,60,60,0.85)";
+  ctx.fillStyle = "rgba(28,33,39,0.92)";
   ctx.beginPath();
-  ctx.roundRect(tx, ty, tagW, tagH, 4 * DPR);
+  ctx.roundRect(tx, ty, tagW, tagH, 2 * DPR);
   ctx.fill();
-  ctx.strokeStyle = "rgba(206,220,0,0.5)";
+  ctx.strokeStyle = "rgba(251,179,96,0.7)";
   ctx.lineWidth = 1.5;
   ctx.stroke();
-  ctx.font = `800 ${fontSize}px "Roboto Slab",Georgia,serif`;
+  ctx.font = `600 ${fontSize}px Inter,"Segoe UI",Roboto,Arial,sans-serif`;
   ctx.fillStyle = "#fff";
   ctx.textBaseline = "middle";
   ctx.fillText(text, tx + padX, cy);
-  const img = document.createElement("img");
-  img.src = cv.toDataURL(); img.width = cv.width / DPR; img.height = cv.height / DPR;
-  return img;
+  return finalizeLabel(cv, DPR);
 }
 
+// (label pixel density is set by LABEL_DPR near the top of the label builders)
 // ─── Clinic Site Focus Mode data ─────────────────────────────────────────────
 const CLINIC_FOCUS_POINTS = [
   {id:"cfp_nw1", name:"NW Corner",              file:"North_West_1.jpg", lat:10.6876335, lng:-2.5625671, alt:284.04, boundary:true, corner:true, markerAlt:15},
@@ -433,79 +452,56 @@ const CLINIC_CENTER = { lat: 10.6876766, lng: -2.5615968 };
 
 // ─── Label Image Builder ─────────────────────────────────────────────────────
 function buildLabelImg(name, sectionLabel, icon, color, scale) {
+  // Console-style map callout: slate box, section-colour edge, mono category, sans name.
   const s = Math.max(0.8, Math.min(scale || 1, 1.5));
-  const DPR = 2;
-  const scriptPx = Math.round(29 * s);
-  const metaPx = Math.max(7, Math.round(7 * s));
-  const title = name;
+  const DPR = LABEL_DPR;
+  const namePx = Math.round(12.5 * s);
+  const metaPx = Math.max(8, Math.round(8 * s));
+  const SANS = 'Inter,"Segoe UI",Roboto,Arial,sans-serif';
+  const MONO = '"JetBrains Mono","SF Mono",Menlo,Consolas,monospace';
+  const accent = color || "#4C90F0";
+  const meta = (sectionLabel || "ULLO").toUpperCase();
 
   const tmp = document.createElement("canvas").getContext("2d");
-  tmp.font = `italic ${scriptPx}px "Brush Script MT","Segoe Script","Lucida Handwriting",cursive`;
-  const titleWidth = tmp.measureText(title).width;
+  tmp.font = `700 ${namePx}px ${SANS}`;
+  const nameW = tmp.measureText(name).width;
+  tmp.font = `600 ${metaPx}px ${MONO}`;
+  const metaW = tmp.measureText(meta).width + 12 * s;
 
-  const cw = Math.ceil(Math.max(titleWidth + 34 * s, 140 * s));
-  const ch = Math.ceil(54 * s);
+  const padL = 11 * s, padR = 9 * s;
+  const cw = Math.ceil(Math.max(nameW, metaW) + padL + padR + 2);
+  const ch = Math.ceil(36 * s);
 
   const cv = document.createElement("canvas");
   cv.width = cw * DPR;
   cv.height = ch * DPR;
-
   const ctx = cv.getContext("2d");
   ctx.scale(DPR, DPR);
 
-  const titleX = 16 * s;
-  const titleY = 28 * s;
+  // Box
+  ctx.fillStyle = "rgba(20,24,29,0.95)";
+  ctx.fillRect(0.5, 0.5, cw - 1, ch - 1);
+  ctx.strokeStyle = "rgba(56,62,71,1)";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(0.5, 0.5, cw - 1, ch - 1);
+  // Section-colour edge
+  ctx.fillStyle = accent;
+  ctx.fillRect(0.5, 0.5, Math.max(2, 3 * s), ch - 1);
 
-  // Soft shadow so the signature stays readable over satellite imagery.
-  ctx.font = `italic ${scriptPx}px "Brush Script MT","Segoe Script","Lucida Handwriting",cursive`;
-  ctx.textAlign = "left";
+  // Category line: small square + mono caps
+  ctx.fillStyle = accent;
+  ctx.fillRect(padL, 8 * s, 5 * s, 5 * s);
+  ctx.font = `600 ${metaPx}px ${MONO}`;
+  ctx.fillStyle = "#C5CBD3";
   ctx.textBaseline = "middle";
-  ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
-  ctx.shadowBlur = 8 * s;
-  ctx.shadowOffsetY = 2 * s;
+  ctx.fillText(meta, Math.round(padL + 9 * s), Math.round(10.75 * s));
+
+  // Name
+  ctx.font = `700 ${namePx}px ${SANS}`;
   ctx.fillStyle = "#FFFFFF";
-  ctx.fillText(title, titleX, titleY);
-  ctx.shadowColor = "transparent";
-  ctx.shadowBlur = 0;
-  ctx.shadowOffsetY = 0;
+  ctx.fillText(name, Math.round(padL), Math.round(24.5 * s));
 
-  // Small editorial category label.
-  ctx.font = `700 ${metaPx}px Arial,sans-serif`;
-  ctx.fillStyle = "rgba(255,255,255,0.86)";
-  ctx.textBaseline = "alphabetic";
-  ctx.fillText((sectionLabel || "ULLO").toUpperCase(), titleX + 2 * s, 10 * s);
-
-  // Brush-like underline flourish.
-  const underlineStart = titleX + 5 * s;
-  const underlineEnd = Math.min(cw - 8 * s, titleX + titleWidth - 2 * s);
-  const underlineY = 42 * s;
-
-  ctx.strokeStyle = color || "#FFFFFF";
-  ctx.lineWidth = Math.max(1.5, 2 * s);
-  ctx.lineCap = "round";
-  ctx.beginPath();
-  ctx.moveTo(underlineStart, underlineY);
-  ctx.bezierCurveTo(
-    underlineStart + (underlineEnd - underlineStart) * 0.35,
-    underlineY + 4 * s,
-    underlineStart + (underlineEnd - underlineStart) * 0.72,
-    underlineY - 4 * s,
-    underlineEnd,
-    underlineY - 1 * s
-  );
-  ctx.stroke();
-
-  // Small accent mark at the end of the flourish.
-  ctx.fillStyle = color || "#FFFFFF";
-  ctx.beginPath();
-  ctx.arc(underlineEnd + 4 * s, underlineY - 1 * s, Math.max(1.5, 2 * s), 0, Math.PI * 2);
-  ctx.fill();
-
-  const img = document.createElement("img");
-  img.src = cv.toDataURL("image/png");
-  img.width = cw;
-  img.height = ch;
-  return img;
+  return finalizeLabel(cv, DPR);
 }
 
 // ─── Altitude Stagger (prevents label overlap) ──────────────────────────────
@@ -744,27 +740,24 @@ function PanoViewer({ photoUrl, photoUrls, locationName, tall }) {
   };
 
   if (!photos.length) return (
-    <div style={{ width: "100%", height: h, borderRadius: 8, overflow: "hidden", border: "1px solid " + C.border, background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ fontSize: 36, opacity: 0.3, marginBottom: 8 }}>📷</div>
-      <div style={{ color: C.textDim, fontSize: 12, fontFamily: "Roboto,sans-serif" }}>360° photo not yet added</div>
+    <div className="px-empty" style={{ width: "100%", height: h }}>
+      <span style={{ fontSize: 18, opacity: 0.5 }}>◌</span>360° photo not yet added
     </div>
   );
   return (
-    <div style={{ position: "relative", width: "100%" }}>
-      <div style={{ width: "100%", height: h, borderRadius: 8, overflow: "hidden", border: "1px solid " + C.border, position: "relative" }}>
-        <div ref={ref} style={{ width: "100%", height: "100%" }} />
-        <div style={{ position: "absolute", top: 8, left: 8, zIndex: 1000, background: "rgba(0,0,0,0.75)", borderRadius: 6, padding: "6px 10px", fontFamily: "monospace", fontSize: 11, color: "#0f0", display: "flex", gap: 12, alignItems: "center", pointerEvents: "auto" }}>
-          <span ref={overlayRef}>yaw:0  pitch:0  hfov:110</span>
-          <button onClick={copyCoords} style={{ padding: "2px 8px", borderRadius: 4, border: "1px solid #0f04", background: copied ? "#0f03" : "transparent", color: "#0f0", fontSize: 10, cursor: "pointer", fontFamily: "monospace" }}>{copied ? "✓ copied" : "copy"}</button>
-        </div>
-        {photos.length > 1 && (
-          <div style={{ position: "absolute", bottom: 10, left: "50%", transform: "translateX(-50%)", zIndex: 1000, display: "flex", alignItems: "center", gap: 12, padding: "5px 14px", borderRadius: 980, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.15)", pointerEvents: "auto" }}>
-            <button onClick={() => setIdx((idx - 1 + photos.length) % photos.length)} style={{ width: 28, height: 28, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.1)", color: "#fff", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>←</button>
-            <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 11, fontFamily: "Roboto,sans-serif", minWidth: 40, textAlign: "center" }}>{idx + 1} / {photos.length}</span>
-            <button onClick={() => setIdx((idx + 1) % photos.length)} style={{ width: 28, height: 28, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.1)", color: "#fff", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>→</button>
-          </div>
-        )}
+    <div className="px-frame" style={{ height: h }}>
+      <div ref={ref} style={{ width: "100%", height: "100%" }} />
+      <div className="px-hud" style={{ top: 8, left: 8 }}>
+        <span ref={overlayRef}>yaw:0  pitch:0  hfov:110</span>
+        <button className="px-btn sm out" style={{ height: 18, padding: "0 6px", fontSize: 9.5 }} onClick={copyCoords}>{copied ? "✓ copied" : "copy"}</button>
       </div>
+      {photos.length > 1 && (
+        <div className="px-hud" style={{ bottom: 10, left: "50%", transform: "translateX(-50%)", height: 30, padding: "0 3px", gap: 2 }}>
+          <button className="px-btn min icon sm" style={{ width: 24, height: 24 }} onClick={() => setIdx((idx - 1 + photos.length) % photos.length)}>←</button>
+          <span style={{ minWidth: 54, textAlign: "center", color: "var(--tx)" }}>{String(idx + 1).padStart(2, "0")} / {String(photos.length).padStart(2, "0")}</span>
+          <button className="px-btn min icon sm" style={{ width: 24, height: 24 }} onClick={() => setIdx((idx + 1) % photos.length)}>→</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -773,31 +766,191 @@ function PanoViewer({ photoUrl, photoUrls, locationName, tall }) {
 function BoreholeDataCard({ data }) {
   if (!data) return null;
   const op = data.operational === "Yes", hasWQ = data.ph != null;
-  const Pill = ({ label, value, unit, warn }) => (
-    <div style={{ background: warn ? "rgba(224,82,82,0.12)" : "rgba(255,255,255,0.04)", border: "1px solid " + (warn ? "rgba(224,82,82,0.3)" : "rgba(255,255,255,0.08)"), borderRadius: 8, padding: "8px 10px", flex: "1 1 70px" }}>
-      <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", fontFamily: "Roboto,sans-serif", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 15, fontWeight: 700, color: warn ? "#E05252" : "#fff", fontFamily: "Roboto,sans-serif", lineHeight: 1 }}>{value ?? "—"}{value != null && <span style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", marginLeft: 2 }}>{unit}</span>}</div>
-    </div>
+  const row = (label, value, unit, warn) => value == null ? null : (
+    <tr key={label}><td className="wq-k">{label}</td><td className={"wq-v" + (warn ? " flag" : "")}>{value}</td><td className="wq-u">{unit}</td></tr>
   );
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 14 }}>
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 10, fontWeight: 700, fontFamily: "Roboto,sans-serif", background: op ? "rgba(59,168,82,0.18)" : "rgba(224,82,82,0.18)", border: "1px solid " + (op ? "rgba(59,168,82,0.4)" : "rgba(224,82,82,0.4)"), color: op ? "#5DC87A" : "#E05252" }}>{op ? "● Operational" : "● Non-operational"}</span>
-        <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 10, fontFamily: "Roboto,sans-serif", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)" }}>{data.pump_type}</span>
+    <div className="wq wq-card">
+      <style>{WQ_CSS}</style>
+      <div className="wq-bar">
+        <span className="wq-glyph">BH</span>
+        <span className="wq-title">Borehole Survey</span>
+        <span className="wq-tag" style={{ marginLeft: "auto" }}>JUL 2022</span>
+        <span className="wq-tag" style={op ? { color: "#72CA9B", borderColor: "rgba(114,202,155,.35)" } : { color: "#E76A6E", borderColor: "rgba(231,106,110,.4)" }}>{op ? "OPERATIONAL" : "NON-OPERATIONAL"}</span>
       </div>
-      {data.flow_wet != null && <div style={{ display: "flex", gap: 6 }}><Pill label="Flow Rate (Wet)" value={data.flow_wet} unit="L/min" /></div>}
-      {hasWQ && <>
-        <div style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", fontFamily: "Roboto,sans-serif", textTransform: "uppercase", letterSpacing: 1.5, marginTop: 2 }}>Water Quality · July 2022</div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          <Pill label="pH" value={data.ph} unit="" warn={data.ph < 6.5 || data.ph > 8.5} />
-          <Pill label="TDS" value={data.tds} unit="ppm" warn={data.tds > 500} />
-          <Pill label="EC" value={data.ec} unit="μS/cm" />
-        </div>
-        <div style={{ display: "flex", gap: 6 }}><Pill label="Total Chlorine" value={data.total_chlorine} unit="mg/L" warn={data.total_chlorine > 4} /></div>
-      </>}
-      {data.notes && <div style={{ padding: "8px 10px", borderRadius: 8, fontSize: 11, lineHeight: 1.5, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.45)", fontFamily: "Roboto,sans-serif", fontStyle: "italic" }}>{data.notes}</div>}
-      <div style={{ fontSize: 9, color: "rgba(255,255,255,0.18)", fontFamily: "Roboto,sans-serif", textAlign: "right" }}>Source: UTA Borehole Investigation, July 2022</div>
+      <table className="wq-t">
+        <thead><tr><th>Property</th><th style={{ textAlign: "right" }}>Value</th><th>Unit</th></tr></thead>
+        <tbody>
+          <tr className="wq-g"><td colSpan={3}>Infrastructure</td></tr>
+          {row("Pump type", data.pump_type, "")}
+          {row("Flow rate (wet season)", data.flow_wet, "L/min")}
+          {hasWQ && <tr className="wq-g"><td colSpan={3}>Water quality</td></tr>}
+          {hasWQ && row("pH", data.ph, "", data.ph < 6.5 || data.ph > 8.5)}
+          {hasWQ && row("Total dissolved solids", data.tds, "ppm", data.tds > 500)}
+          {hasWQ && row("Electrical conductivity", data.ec, "μS/cm")}
+          {hasWQ && row("Total chlorine", data.total_chlorine, "mg/L", data.total_chlorine > 4)}
+        </tbody>
+      </table>
+      {data.notes && <div style={{ padding: "8px 10px", fontSize: 11.5, lineHeight: 1.5, color: "#ABB3BF", borderTop: "1px solid #383E47", fontStyle: "italic" }}>{data.notes}</div>}
+      <div className="wq-actions"><span className="wq-sub">SOURCE: UTA BOREHOLE INVESTIGATION · JUL 2022</span></div>
     </div>
+  );
+}
+
+
+// ─── Water test tables (analytics-console styling) ───────────────────────────
+const fmtWater = v => v == null ? "—" : Array.isArray(v) ? v[0] + "–" + v[1] : String(v);
+const WATER_LIMITS = { ph: "6.5–8.5", fluoride: "≤ 1.5", tds: "≤ 500" };
+const waterWarn = (key, v) => {
+  if (v == null) return false;
+  const lo = Array.isArray(v) ? v[0] : v, hi = Array.isArray(v) ? v[1] : v;
+  if (key === "ph") return lo < 6.5 || hi > 8.5;
+  if (key === "fluoride") return hi > 1.5;
+  if (key === "tds") return hi > 500;
+  return false;
+};
+const waterStatus = (key, v) => v == null ? "none" : waterWarn(key, v) ? "flag" : WATER_LIMITS[key] ? "ok" : "info";
+const groupedParams = rows => {
+  const out = []; let g = null;
+  for (const p of WATER_PARAMS) { if (!rows(p)) continue; if (p.group !== g) { g = p.group; out.push({ isGroup: true, group: g }); } out.push(p); }
+  return out;
+};
+const WQ_CSS = `
+.wq{--bg:#1C2127;--panel:#252A31;--head:#2F343C;--line:#383E47;--line2:#2F343C;--tx:#F6F7F9;--mut:#ABB3BF;--dim:#738091;--blue:#4C90F0;--blue2:#8ABBFF;--red:#E76A6E;--green:#72CA9B;--mono:"JetBrains Mono","SF Mono",Menlo,Consolas,"Liberation Mono",monospace;--sans:Inter,-apple-system,"Segoe UI",Roboto,sans-serif;font-family:var(--sans);color:var(--tx);font-feature-settings:"tnum"}
+.wq *{box-sizing:border-box}
+.wq-card{margin-top:14px;background:var(--bg);border:1px solid var(--line);border-radius:2px}
+.wq-bar{display:flex;align-items:center;gap:8px;height:32px;padding:0 10px;background:var(--head);border-bottom:1px solid var(--line)}
+.wq-glyph{width:16px;height:16px;border-radius:2px;background:rgba(76,144,240,.18);border:1px solid rgba(76,144,240,.5);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--blue2);font-family:var(--mono)}
+.wq-title{font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase}
+.wq-sub{font-size:10px;color:var(--dim);font-family:var(--mono);letter-spacing:.3px}
+.wq-tag{font-family:var(--mono);font-size:9.5px;color:var(--mut);border:1px solid var(--line);background:var(--panel);padding:1px 6px;border-radius:2px;letter-spacing:.3px}
+.wq-t{width:100%;border-collapse:separate;border-spacing:0}
+.wq-t th{height:26px;padding:0 10px;font-size:9.5px;font-weight:600;letter-spacing:.9px;text-transform:uppercase;color:var(--dim);text-align:left;background:var(--panel);border-bottom:1px solid var(--line);white-space:nowrap}
+.wq-t td{height:27px;padding:0 10px;font-size:12px;border-bottom:1px solid var(--line2);white-space:nowrap}
+.wq-t tbody tr:not(.wq-g):hover td{background:rgba(76,144,240,.08)!important}
+.wq-g td{height:22px;font-size:9px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--blue2);background:rgba(76,144,240,.06);border-bottom:1px solid var(--line)}
+.wq-k{color:var(--mut)}
+.wq-v{font-family:var(--mono);font-size:12px;text-align:right;color:var(--tx)}
+.wq-v.flag{color:var(--red)} .wq-v.none{color:#4E5867}
+.wq-u{font-family:var(--mono);font-size:10.5px;color:var(--dim)}
+.wq-lim{font-family:var(--mono);font-size:10.5px;color:var(--dim);text-align:right}
+.wq-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:7px;vertical-align:1px}
+.wq-dot.ok{background:var(--green);box-shadow:0 0 0 2px rgba(114,202,155,.15)} .wq-dot.flag{background:var(--red);box-shadow:0 0 0 2px rgba(231,106,110,.18)} .wq-dot.info{background:#5F6B7C} .wq-dot.none{background:transparent;border:1px solid #4E5867}
+.wq-actions{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--panel);border-top:1px solid var(--line)}
+.wq-btn{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:2px;border:1px solid var(--line);background:#383E47;color:var(--tx);font:500 11px var(--sans);cursor:pointer;text-decoration:none;letter-spacing:.2px}
+.wq-btn:hover{background:#404854}
+.wq-btn.pri{background:#2D72D2;border-color:#2D72D2} .wq-btn.pri:hover{background:#215DB0}
+.wq-btn .i{font-family:var(--mono);font-size:11px;opacity:.85}
+.wq-ov{position:fixed;inset:0;z-index:10000;background:rgba(17,20,24,.72);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;padding:16px}
+.wq-modal{width:min(1180px,100%);max-height:calc(100vh - 32px);display:flex;flex-direction:column;background:var(--bg);border:1px solid var(--line);border-radius:3px;box-shadow:0 0 0 1px rgba(0,0,0,.4),0 24px 64px rgba(0,0,0,.55)}
+.wq-modal .wq-bar{height:44px;padding:0 12px}
+.wq-scroll{overflow:auto}
+.wq-grid th,.wq-grid td{border-right:1px solid var(--line2)}
+.wq-grid thead th{position:sticky;top:0;z-index:2;text-align:right;vertical-align:bottom;padding-top:6px;padding-bottom:6px;height:auto;white-space:normal;min-width:104px;line-height:1.35}
+.wq-grid .stk{position:sticky;left:0;z-index:1;background:var(--bg);border-right:1px solid var(--line)}
+.wq-grid thead th.stk{z-index:3;background:var(--panel);text-align:left}
+.wq-grid .hl{background:rgba(76,144,240,.07)} .wq-grid thead th.hl{color:var(--blue2);box-shadow:inset 0 2px 0 var(--blue);background:#28303B}
+.wq-status{display:flex;align-items:center;gap:14px;height:26px;padding:0 12px;background:var(--panel);border-top:1px solid var(--line);font:10px var(--mono);color:var(--dim);letter-spacing:.3px;flex-wrap:wrap}
+.wq-filter{height:26px;width:180px;padding:0 8px;border-radius:2px;border:1px solid var(--line);background:var(--bg);color:var(--tx);font:11px var(--sans);outline:none}
+.wq-filter:focus{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
+`;
+
+function WaterTestCard({ t }) {
+  const [showAll, setShowAll] = useState(false);
+  if (!t) return null;
+  const rows = groupedParams(p => t.values[p.key] != null);
+  const flags = WATER_PARAMS.filter(p => waterWarn(p.key, t.values[p.key])).length;
+  return (
+    <div className="wq wq-card">
+      <style>{WQ_CSS}</style>
+      <div className="wq-bar">
+        <span className="wq-glyph">H₂O</span>
+        <span className="wq-title">Water Quality</span>
+        <span style={{ marginLeft: "auto" }} className="wq-tag">{t.site.toUpperCase()}</span>
+        <span className="wq-tag" style={flags ? { color: "#E76A6E", borderColor: "rgba(231,106,110,.4)" } : { color: "#72CA9B", borderColor: "rgba(114,202,155,.35)" }}>{flags ? flags + " FLAG" + (flags > 1 ? "S" : "") : "NO FLAGS"}</span>
+      </div>
+      <table className="wq-t">
+        <thead><tr><th>Property</th><th style={{ textAlign: "right" }}>Value</th><th>Unit</th></tr></thead>
+        <tbody>{rows.map(r => r.isGroup
+          ? <tr key={r.group} className="wq-g"><td colSpan={3}>{r.group}</td></tr>
+          : <tr key={r.key}>
+              <td className="wq-k"><span className={"wq-dot " + waterStatus(r.key, t.values[r.key])} />{r.label}</td>
+              <td className={"wq-v " + (waterWarn(r.key, t.values[r.key]) ? "flag" : "")}>{fmtWater(t.values[r.key])}</td>
+              <td className="wq-u">{r.unit}</td>
+            </tr>)}</tbody>
+      </table>
+      <div className="wq-actions">
+        <button className="wq-btn pri" onClick={() => setShowAll(true)}><span className="i">⊞</span>Compare sites</button>
+        <a className="wq-btn" href={WATER_XLSX_URL} download><span className="i">↓</span>Export .xlsx</a>
+        <span className="wq-sub" style={{ marginLeft: "auto" }}>n={t.samples ?? "—"}{t.time ? " · " + t.time : ""}</span>
+      </div>
+      {showAll && <WaterTableModal onClose={() => setShowAll(false)} highlightId={t.id} />}
+    </div>
+  );
+}
+
+function WaterTableModal({ onClose, highlightId }) {
+  const [q, setQ] = useState("");
+  useEffect(() => {
+    const onKey = e => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  const needle = q.trim().toLowerCase();
+  const rows = groupedParams(p => WATER_SITES.some(s => s.values[p.key] != null) && (!needle || p.label.toLowerCase().includes(needle) || p.group.toLowerCase().includes(needle)));
+  const nProps = rows.filter(r => !r.isGroup).length;
+  const nFlags = WATER_SITES.reduce((n, s) => n + WATER_PARAMS.filter(p => waterWarn(p.key, s.values[p.key])).length, 0);
+  return createPortal(
+    <div className="wq wq-ov" onClick={onClose}>
+      <style>{WQ_CSS}</style>
+      <div className="wq-modal" onClick={e => e.stopPropagation()}>
+        <div className="wq-bar">
+          <span className="wq-glyph">H₂O</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <span className="wq-title">Water Quality · Site Comparison</span>
+            <span className="wq-sub">EWB-ISU FIELD TESTS · ULLO TRADITIONAL AREA</span>
+          </div>
+          <div style={{ marginLeft: "auto", display: "flex", gap: 6, alignItems: "center" }}>
+            <input className="wq-filter" placeholder="Filter properties…" value={q} onChange={e => setQ(e.target.value)} />
+            <a className="wq-btn pri" href={WATER_XLSX_URL} download><span className="i">↓</span>Export .xlsx</a>
+            <button className="wq-btn" onClick={onClose}><span className="i">✕</span>Close</button>
+          </div>
+        </div>
+        <div className="wq-scroll">
+          <table className="wq-t wq-grid">
+            <thead><tr>
+              <th className="stk">Property</th>
+              <th style={{ textAlign: "left", minWidth: 60 }}>Unit</th>
+              <th style={{ minWidth: 76 }}>Guideline</th>
+              {WATER_SITES.map(s => <th key={s.id} className={s.id === highlightId ? "hl" : ""}>{s.name}<div className="wq-sub" style={{ fontWeight: 400, marginTop: 2 }}>{s.site.toUpperCase()}</div></th>)}
+            </tr></thead>
+            <tbody>
+              {rows.map(r => r.isGroup
+                ? <tr key={r.group} className="wq-g"><td className="stk" style={{ background: "#1F2731" }}>{r.group}</td><td colSpan={WATER_SITES.length + 2} /></tr>
+                : <tr key={r.key}>
+                    <td className="stk wq-k">{r.label}</td>
+                    <td className="wq-u">{r.unit}</td>
+                    <td className="wq-lim">{WATER_LIMITS[r.key] || ""}</td>
+                    {WATER_SITES.map(s => { const v = s.values[r.key]; const st = waterStatus(r.key, v); return (
+                      <td key={s.id} className={"wq-v " + st + (s.id === highlightId ? " hl" : "")}>{v != null && WATER_LIMITS[r.key] && <span className={"wq-dot " + st} />}{fmtWater(v)}</td>); })}
+                  </tr>)}
+              <tr>
+                <td className="stk wq-k" style={{ fontStyle: "italic" }}>Samples (n)</td><td /><td />
+                {WATER_SITES.map(s => <td key={s.id} className={"wq-v none" + (s.id === highlightId ? " hl" : "")} style={{ color: "#ABB3BF" }}>{s.samples ?? "—"}</td>)}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div className="wq-status">
+          <span>{WATER_SITES.length} OBJECTS</span><span>{nProps} PROPERTIES</span>
+          <span style={{ color: nFlags ? "#E76A6E" : "#72CA9B" }}>{nFlags} FLAGGED</span>
+          <span style={{ marginLeft: "auto" }}><span className="wq-dot ok" />WITHIN GUIDELINE</span>
+          <span><span className="wq-dot flag" />OUTSIDE GUIDELINE</span>
+          <span><span className="wq-dot none" />NOT MEASURED</span>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
 
@@ -812,6 +965,11 @@ function PanoVideo({ videoUrls, locationName, tall, btnHidden, onToggleHide }) {
   const stateRef = useRef(null);
   const dragRef = useRef(false);
   const current = videos[idx] || null;
+  const [vidStatus, setVidStatus] = useState("checking"); // checking | found | error
+  const [buffering, setBuffering] = useState(false);
+  const [bufPct, setBufPct] = useState(0);
+  const [playPct, setPlayPct] = useState(0);
+  const [duration, setDuration] = useState(0);
   const h = tall ? "calc(100vh - 220px)" : "240px";
 
   useEffect(() => { setIdx(0); setPlaying(false); setShowBtn(true); if (btnTimer.current) clearTimeout(btnTimer.current); if (onToggleHide) onToggleHide(false); }, [locationName]);
@@ -832,8 +990,9 @@ function PanoVideo({ videoUrls, locationName, tall, btnHidden, onToggleHide }) {
     const url = typeof current === "string" ? current : current.url;
     (async () => {
       if (!window.THREE) {
-        await new Promise(r => { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"; s.onload = r; document.head.appendChild(s); });
+        await new Promise(r => { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"; s.onload = r; s.onerror = r; document.head.appendChild(s); setTimeout(r, 20000); });
       }
+      if (!window.THREE) { console.warn("360 player library failed to load"); setVidStatus("error"); return; }
       const THREE = window.THREE;
       const container = containerRef.current;
       const w = container.clientWidth, ht = container.clientHeight;
@@ -848,6 +1007,27 @@ function PanoVideo({ videoUrls, locationName, tall, btnHidden, onToggleHide }) {
       video.playsInline = true;
       video.loop = true;
       video.muted = false;
+      video.preload = "metadata";
+      setVidStatus("checking"); setBuffering(false); setBufPct(0); setPlayPct(0); setDuration(0);
+      const loadedPct = () => {
+        const d = video.duration;
+        if (!d || !isFinite(d) || !video.buffered.length) return 0;
+        // furthest buffered point at/after the playhead
+        let end = 0;
+        for (let i = 0; i < video.buffered.length; i++) {
+          if (video.buffered.start(i) <= video.currentTime + 0.5) end = Math.max(end, video.buffered.end(i));
+        }
+        return Math.min(100, Math.round(end / d * 100));
+      };
+      video.addEventListener("loadedmetadata", () => { setVidStatus("found"); setDuration(video.duration || 0); });
+      video.addEventListener("progress", () => setBufPct(loadedPct()));
+      video.addEventListener("timeupdate", () => { setBufPct(loadedPct()); if (video.duration) setPlayPct(video.currentTime / video.duration * 100); });
+      video.addEventListener("waiting", () => setBuffering(true));
+      video.addEventListener("stalled", () => { if (!video.paused && video.readyState < 3) setBuffering(true); });
+      video.addEventListener("playing", () => setBuffering(false));
+      video.addEventListener("canplaythrough", () => { if (!video.paused) setBuffering(false); });
+      video.addEventListener("pause", () => setBuffering(false));
+      video.addEventListener("error", () => { console.warn("360 video failed to load:", url, video.error); setVidStatus("error"); setBuffering(false); });
       video.src = url;
       const texture = new THREE.VideoTexture(video);
       texture.minFilter = THREE.LinearFilter;
@@ -903,7 +1083,9 @@ function PanoVideo({ videoUrls, locationName, tall, btnHidden, onToggleHide }) {
     if (!s?.video) return;
     if (btnTimer.current) clearTimeout(btnTimer.current);
     if (s.video.paused) {
-      s.video.play(); setPlaying(true); setShowBtn(true);
+      if (s.video.readyState < 3) setBuffering(true);
+      s.video.preload = "auto";
+      s.video.play().catch(() => {}); setPlaying(true); setShowBtn(true);
       btnTimer.current = setTimeout(() => setShowBtn(false), 3000);
     } else {
       s.video.pause(); setPlaying(false);
@@ -912,32 +1094,58 @@ function PanoVideo({ videoUrls, locationName, tall, btnHidden, onToggleHide }) {
     }
   };
 
+  const fmtT = (t) => { if (!t || !isFinite(t)) return "--:--"; const m = Math.floor(t / 60); return m + ":" + String(Math.floor(t % 60)).padStart(2, "0"); };
   if (!videos.length) return (
-    <div style={{ width: "100%", height: h, borderRadius: 8, overflow: "hidden", border: "1px solid " + C.border, background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ fontSize: 36, opacity: 0.3, marginBottom: 8 }}>🎥</div>
-      <div style={{ color: C.textDim, fontSize: 12, fontFamily: "Roboto,sans-serif" }}>360° video not yet added</div>
+    <div className="px-empty" style={{ width: "100%", height: h }}>
+      <span style={{ fontSize: 18, opacity: 0.5 }}>◌</span>360° video not yet added
     </div>
   );
   return (
     <div style={{ position: "relative", width: "100%" }}>
-      <div ref={containerRef} onClick={() => { if (dragRef.current) { dragRef.current = false; if (playing || btnHidden) togglePlay(true); } }} style={{ width: "100%", height: h, borderRadius: 8, overflow: "hidden", border: "1px solid " + C.border, background: "#000", cursor: "grab" }} />
-      {!btnHidden && (
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, transition: "opacity 0.5s", opacity: showBtn ? 1 : 0, pointerEvents: showBtn ? "auto" : "none" }}>
-          <button onClick={() => togglePlay(false)} style={{ padding: "12px 24px", borderRadius: 980, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.25)", color: "#fff", fontSize: 15, cursor: "pointer", fontFamily: "-apple-system,sans-serif" }}>
-            {playing ? "⏸ Pause" : "▶ Play"}
-          </button>
-          {!playing && (
-            <button onClick={() => { if (onToggleHide) onToggleHide(true); }} style={{ padding: "4px 12px", borderRadius: 980, background: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.6)", fontSize: 11, cursor: "pointer", fontFamily: "-apple-system,sans-serif" }}>
-              Hide play button
-            </button>
-          )}
+      <div ref={containerRef} className="px-frame" onClick={() => { if (dragRef.current) { dragRef.current = false; if (playing || btnHidden) togglePlay(true); } }} style={{ height: h, cursor: "grab" }} />
+      {vidStatus === "error" && (
+        <div className="px-empty" style={{ position: "absolute", inset: 0, zIndex: 5, borderStyle: "solid", gap: 8, textAlign: "center", padding: 20 }}>
+          <span style={{ fontSize: 18, opacity: 0.5 }}>◌</span>Video not available
+        </div>
+      )}
+      {vidStatus === "checking" && (
+        <div className="px-hud" style={{ top: 8, left: 8 }}><span className="px-spin" style={{ width: 12, height: 12, borderWidth: 2 }} />Locating video…</div>
+      )}
+      {vidStatus === "found" && !playing && (
+        <div className="px-hud" style={{ top: 8, left: 8 }}><span className="px-sq" style={{ background: "var(--green)", borderRadius: "50%" }} />Video ready · {fmtT(duration)}</div>
+      )}
+      {vidStatus === "found" && playing && buffering && (
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 6, pointerEvents: "none" }}>
+          <div className="px-panel" style={{ width: 260, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span className="px-spin" style={{ width: 14, height: 14, borderWidth: 2 }} />
+              <span style={{ fontSize: 12.5, fontWeight: 600 }}>Loading video…</span>
+              <span className="px-mono px-muted" style={{ marginLeft: "auto", fontSize: 11 }}>{bufPct}%</span>
+            </div>
+            <div style={{ height: 4, background: "var(--line)", borderRadius: 2, overflow: "hidden" }}>
+              <div style={{ width: Math.max(3, bufPct) + "%", height: "100%", background: "var(--blueHi)", transition: "width .3s ease" }} />
+            </div>
+            <span className="px-mono px-dim" style={{ fontSize: 9.5, letterSpacing: .4 }}>LARGE 360° FILE · PLAYBACK STARTS AUTOMATICALLY</span>
+          </div>
+        </div>
+      )}
+      {vidStatus === "found" && (
+        <div style={{ position: "absolute", left: 1, right: 1, bottom: 1, height: 3, background: "rgba(56,62,71,.7)", zIndex: 4, pointerEvents: "none" }}>
+          <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: bufPct + "%", background: "rgba(171,179,191,.45)", transition: "width .3s ease" }} />
+          <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: playPct + "%", background: "var(--blueHi)" }} />
+        </div>
+      )}
+      {!btnHidden && vidStatus !== "error" && !(playing && buffering) && (
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, transition: "opacity 0.5s", opacity: showBtn ? 1 : 0, pointerEvents: showBtn ? "auto" : "none" }}>
+          <button className="px-btn pri lg" onClick={() => togglePlay(false)}><span className="i">{playing ? "❚❚" : "▶"}</span>{playing ? "Pause" : "Play 360° video"}</button>
+          {!playing && <button className="px-btn sm out" style={{ background: "rgba(17,20,24,.8)" }} onClick={() => { if (onToggleHide) onToggleHide(true); }}>Hide button</button>}
         </div>
       )}
       {videos.length > 1 && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginTop: 8 }}>
-          <button onClick={() => { setIdx((idx - 1 + videos.length) % videos.length); setPlaying(false); setShowBtn(true); }} style={{ width: 30, height: 30, borderRadius: "50%", border: "1px solid " + C.border, background: C.bgPanel, color: C.blueLight, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>←</button>
-          <span style={{ color: C.textMuted, fontSize: 11, fontFamily: "Roboto,sans-serif", minWidth: 50, textAlign: "center" }}>{idx + 1} / {videos.length}</span>
-          <button onClick={() => { setIdx((idx + 1) % videos.length); setPlaying(false); setShowBtn(true); }} style={{ width: 30, height: 30, borderRadius: "50%", border: "1px solid " + C.border, background: C.bgPanel, color: C.blueLight, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>→</button>
+        <div className="px-hud" style={{ position: "static", display: "inline-flex", marginTop: 6, height: 30, padding: "0 3px", gap: 2 }}>
+          <button className="px-btn min icon sm" style={{ width: 24, height: 24 }} onClick={() => { setIdx((idx - 1 + videos.length) % videos.length); setPlaying(false); setShowBtn(true); }}>←</button>
+          <span style={{ minWidth: 54, textAlign: "center", color: "var(--tx)" }}>{String(idx + 1).padStart(2, "0")} / {String(videos.length).padStart(2, "0")}</span>
+          <button className="px-btn min icon sm" style={{ width: 24, height: 24 }} onClick={() => { setIdx((idx + 1) % videos.length); setPlaying(false); setShowBtn(true); }}>→</button>
         </div>
       )}
     </div>
@@ -982,28 +1190,23 @@ function DroneIntro({ url, locationName, onSkip }) {
   const fmt = (s) => { const m = Math.floor(s / 60); return m + ":" + String(Math.floor(s % 60)).padStart(2, "0"); };
 
   return (
-    <div style={{ position: "absolute", inset: 0, zIndex: 600, background: "#000", display: "flex", flexDirection: "column" }}>
-      <video ref={videoRef} src={url} playsInline style={{ flex: 1, width: "100%", objectFit: "contain", background: "#000", cursor: "pointer" }} onClick={togglePlay} />
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "16px 20px 20px", background: "linear-gradient(transparent, rgba(0,0,0,0.85))", display: "flex", flexDirection: "column", gap: 10 }}>
-        <div onClick={seek} style={{ width: "100%", height: 4, background: "rgba(255,255,255,0.2)", borderRadius: 2, cursor: "pointer", position: "relative" }}>
-          <div style={{ width: duration ? (progress / duration * 100) + "%" : "0%", height: "100%", background: C.gold, borderRadius: 2, transition: "width 0.1s linear" }} />
+    <div className="px" style={{ position: "absolute", inset: 0, zIndex: 600, background: "#000", display: "flex", flexDirection: "column" }}>
+      <div className="px-bar" style={{ minHeight: 40, padding: "0 12px", background: "var(--panel)" }}>
+        <span className="px-tag blue">DRONE</span>
+        <span style={{ fontSize: 13, fontWeight: 600 }}>{locationName}</span>
+        <button className="px-btn out icon" style={{ marginLeft: "auto" }} onClick={onSkip}>✕</button>
+      </div>
+      <video ref={videoRef} src={url} playsInline style={{ flex: 1, minHeight: 0, width: "100%", objectFit: "contain", background: "#000", cursor: "pointer" }} onClick={togglePlay} />
+      <div style={{ background: "var(--panel)", borderTop: "1px solid var(--line)" }}>
+        <div onClick={seek} style={{ width: "100%", height: 4, background: "var(--line)", cursor: "pointer" }}>
+          <div style={{ width: duration ? (progress / duration * 100) + "%" : "0%", height: "100%", background: "var(--blueHi)", transition: "width 0.1s linear" }} />
         </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <button onClick={togglePlay} style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", color: "#fff", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {playing ? "⏸" : "▶"}
-            </button>
-            <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontFamily: "monospace" }}>{fmt(progress)} / {fmt(duration)}</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "Roboto,sans-serif" }}>{locationName}</span>
-            <button onClick={onSkip} style={{ padding: "8px 20px", borderRadius: 980, background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.25)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "-apple-system,sans-serif" }}>
-              Explore →
-            </button>
-          </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px" }}>
+          <button className="px-btn icon" onClick={togglePlay}>{playing ? "❚❚" : "▶"}</button>
+          <span className="px-mono px-muted" style={{ fontSize: 11 }}>{fmt(progress)} / {fmt(duration)}</span>
+          <button className="px-btn pri" style={{ marginLeft: "auto" }} onClick={onSkip}>Explore location <span className="i">→</span></button>
         </div>
       </div>
-      <button onClick={onSkip} style={{ position: "absolute", top: 16, right: 16, width: 38, height: 38, borderRadius: "50%", background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
     </div>
   );
 }
@@ -1021,36 +1224,25 @@ function MediaViewer({ loc, tall }) {
   useEffect(() => { setActiveTab(tabs[0] || "photos"); setPlayBtnHidden(false); }, [loc.id]);
 
   if (!tabs.length) return (
-    <div style={{ width: "100%", height: 240, borderRadius: 8, overflow: "hidden", border: "1px solid " + C.border, background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ fontSize: 36, opacity: 0.3, marginBottom: 8 }}>📷</div>
-      <div style={{ color: C.textDim, fontSize: 12, fontFamily: "Roboto,sans-serif" }}>No media added yet</div>
+    <div className="px-empty" style={{ width: "100%", height: 200 }}>
+      <span style={{ fontSize: 18, opacity: 0.5 }}>◌</span>No media added yet
     </div>
   );
 
   return (
     <div>
-      {tabs.length > 1 && (
-        <div style={{ display: "flex", gap: 4, marginBottom: 10, alignItems: "center" }}>
-          {tabs.map(tab => (
-            <button key={tab} onClick={() => { setActiveTab(tab); if (tab !== "video") setPlayBtnHidden(false); }}
-              style={{ padding: "6px 16px", borderRadius: 6, border: "1px solid " + (activeTab === tab ? C.blue + "55" : "rgba(255,255,255,0.1)"), background: activeTab === tab ? C.blue + "18" : "transparent", color: activeTab === tab ? "#fff" : "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: activeTab === tab ? 600 : 400, cursor: "pointer", textTransform: "capitalize", fontFamily: "Roboto,sans-serif" }}>
-              {tab === "photos" ? "📷 Photos" : "🎥 Video"}
-            </button>
-          ))}
-          {playBtnHidden && activeTab === "video" && (
-            <button onClick={() => setPlayBtnHidden(false)}
-              style={{ padding: "5px 12px", borderRadius: 980, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", fontSize: 11, cursor: "pointer", fontFamily: "-apple-system,sans-serif", marginLeft: 4 }}>
-              ▶ Show play button
-            </button>
+      {(tabs.length > 1 || (playBtnHidden && activeTab === "video")) && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
+          {tabs.length > 1 && (
+            <div className="px-seg">
+              {tabs.map(tab => (
+                <button key={tab} className={activeTab === tab ? "on" : ""} onClick={() => { setActiveTab(tab); if (tab !== "video") setPlayBtnHidden(false); }}>
+                  {tab === "photos" ? "360° Photos" : "360° Video"}
+                </button>
+              ))}
+            </div>
           )}
-        </div>
-      )}
-      {tabs.length === 1 && playBtnHidden && activeTab === "video" && (
-        <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
-          <button onClick={() => setPlayBtnHidden(false)}
-            style={{ padding: "5px 12px", borderRadius: 980, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", fontSize: 11, cursor: "pointer", fontFamily: "-apple-system,sans-serif" }}>
-            ▶ Show play button
-          </button>
+          {playBtnHidden && activeTab === "video" && <button className="px-btn sm out" onClick={() => setPlayBtnHidden(false)}><span className="i">▶</span>Show play button</button>}
         </div>
       )}
       {activeTab === "photos" && <PanoViewer photoUrl={loc.photoUrl} photoUrls={loc.photoUrls} locationName={loc.name} tall={tall} />}
@@ -1059,8 +1251,12 @@ function MediaViewer({ loc, tall }) {
   );
 }
 
+
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function UlloExplorer({ session, profile }) {
+  const [sbOpen, setSbOpen] = useState(true);
+  const [query, setQuery] = useState("");
+  const pendingLoc = useRef(null);
   const [apiKey, setApiKey]           = useState(GOOGLE_API_KEY || "");
   const [keyInput, setKeyInput]       = useState("");
   const [mapReady, setMapReady]       = useState(false);
@@ -1424,188 +1620,234 @@ export default function UlloExplorer({ session, profile }) {
     setTimeout(async () => {
       try {
         const { Marker3DInteractiveElement } = await google.maps.importLibrary("maps3d");
+        // Make sure the label fonts are loaded before labels are drawn to canvas
+        try { await Promise.race([Promise.all([document.fonts.load('600 12px Inter'), document.fonts.load('500 8px "JetBrains Mono"')]), new Promise(r => setTimeout(r, 1500))]); } catch (_) {}
         markers.current = new MarkerManager(map3d, LABELED_LOCATIONS, Marker3DInteractiveElement, selectLoc);
       } catch (err) { console.error("MarkerManager init failed:", err); }
     }, 1200);
   }, [selectLoc]);
 
   useEffect(() => { if (apiKey && !initRef.current) initMap(apiKey); }, [apiKey, initMap]);
-  useEffect(() => { if (!markers.current) return; activeSection ? markers.current.setSection(activeSection) : markers.current.clearSection(); }, [activeSection]);
+  useEffect(() => {
+    if (markers.current) { activeSection ? markers.current.setSection(activeSection) : markers.current.clearSection(); }
+    if (pendingLoc.current) { const l = pendingLoc.current; pendingLoc.current = null; selectLoc(l); }
+  }, [activeSection]);
   useEffect(() => () => { markers.current?.dispose(); camera.current?.stop(); }, []);
 
+  // Pick a location from the sidebar or search; switch category first if needed
+  const pickLoc = (loc) => {
+    if (activeSection && loc.sectionKey !== activeSection) { pendingLoc.current = loc; setActiveSection(loc.sectionKey); }
+    else selectLoc(loc);
+  };
+  const SB_W = sbOpen ? 288 : 48;
+  const q = query.trim().toLowerCase();
+  const searchHits = q ? ALL_LOCATIONS.filter(l => l.name.toLowerCase().includes(q) || (l.sectionLabel || "").toLowerCase().includes(q) || (l.tags || []).some(t => t.toLowerCase().includes(q))) : null;
+  const userName = session?.user?.user_metadata?.full_name || session?.user?.email || "";
+  const coordStr = (lat, lng, d = 4) => lat.toFixed(d) + "°N  " + Math.abs(lng).toFixed(d) + "°W";
+  const roleTag = profile?.role === "admin" ? "orange" : profile?.role === "member" ? "green" : "";
+
   if (profile?.restricted) return (
-    <div style={{ width: "100vw", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: C.bg, fontFamily: "Roboto,sans-serif", padding: 24 }}>
-      <style>{"@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@300;400;500;700;900&family=Roboto+Slab:wght@400;600;700;900&display=swap');*{margin:0;padding:0;box-sizing:border-box}"}</style>
-      <div style={{ maxWidth: 420, width: "100%", padding: "48px 36px", textAlign: "center", background: C.surface, border: "1px solid rgba(224,82,82,0.3)", borderRadius: 12 }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>🚫</div>
-        <h2 style={{ fontFamily: "Roboto Slab,serif", fontSize: 22, color: C.text, fontWeight: 900, marginBottom: 10 }}>Access Restricted</h2>
-        <p style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.7, marginBottom: 24 }}>Your account has been restricted by an administrator. If you believe this is an error, please contact an EWB-ISU team lead.</p>
-        <button onClick={() => supabase.auth.signOut()} style={{ padding: "10px 28px", background: "rgba(224,82,82,0.15)", border: "1px solid rgba(224,82,82,0.4)", borderRadius: 6, color: "#E05252", fontSize: 12, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", cursor: "pointer", fontFamily: "Roboto,sans-serif" }}>Sign Out</button>
+    <div className="px" style={{ width: "100vw", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: C.bg, padding: 24 }}>
+      <style>{GLOBAL_CSS}</style>
+      <div className="px-panel" style={{ maxWidth: 420, width: "100%" }}>
+        <div className="px-bar"><span className="px-sq" style={{ background: "var(--red)" }} /><span className="px-title">Access Restricted</span></div>
+        <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className="px-callout err">Your account has been restricted by an administrator. If you believe this is an error, contact an EWB-ISU team lead.</div>
+          <button className="px-btn danger" style={{ alignSelf: "flex-start" }} onClick={() => supabase.auth.signOut()}>Sign out</button>
+        </div>
       </div>
     </div>
   );
 
   if (!apiKey) return (
-    <div style={{ width: "100vw", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: C.bg, fontFamily: "Roboto,sans-serif", padding: 24 }}>
-      <style>{"@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@300;400;500;700;900&family=Roboto+Slab:wght@400;600;700;900&display=swap');*{margin:0;padding:0;box-sizing:border-box}"}</style>
-      <div style={{ maxWidth: 480, width: "100%", padding: "48px 36px", textAlign: "center", background: C.surface, border: "1px solid " + C.border, borderRadius: 12 }}>
-        <h1 style={{ fontFamily: "Roboto Slab,serif", fontSize: 32, color: C.text, fontWeight: 900 }}>Explore <span style={{ color: C.gold }}>Ullo</span></h1>
-        <p style={{ color: C.blue, fontSize: 12, letterSpacing: 3, textTransform: "uppercase", fontWeight: 500, marginTop: 4 }}>Engineers Without Borders — ISU</p>
-        <input type="text" placeholder="AIzaSy..." value={keyInput} onChange={e => setKeyInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && keyInput.startsWith("AIza")) setApiKey(keyInput); }}
-          style={{ width: "100%", marginTop: 24, padding: "14px 16px", background: "rgba(0,0,0,0.4)", border: "1px solid " + C.border, borderRadius: 6, color: C.text, fontSize: 14, fontFamily: "monospace", outline: "none" }} />
-        <button onClick={() => { if (keyInput.startsWith("AIza")) setApiKey(keyInput); }} style={{ width: "100%", marginTop: 12, padding: "14px", background: C.blue, color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", cursor: "pointer", fontFamily: "Roboto,sans-serif" }}>Launch Explorer →</button>
+    <div className="px" style={{ width: "100vw", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: C.bg, padding: 24 }}>
+      <style>{GLOBAL_CSS}</style>
+      <div className="px-panel" style={{ maxWidth: 440, width: "100%" }}>
+        <div className="px-bar"><span className="px-glyph">U</span><span className="px-title">Ullo Explorer</span><span className="px-tag" style={{ marginLeft: "auto" }}>CONFIG</span></div>
+        <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className="px-label">Google Maps API key</div>
+          <input className="px-input px-mono" type="text" placeholder="AIzaSy…" value={keyInput} onChange={e => setKeyInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && keyInput.startsWith("AIza")) setApiKey(keyInput); }} />
+          <button className="px-btn pri lg" onClick={() => { if (keyInput.startsWith("AIza")) setApiKey(keyInput); }}>Launch explorer <span className="i">→</span></button>
+        </div>
       </div>
     </div>
   );
 
   return (
-    <div style={{ width: "100vw", height: "100vh", position: "relative", overflow: "hidden", fontFamily: "Roboto,sans-serif", background: C.bg }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto:wght@300;400;500;700;900&family=Roboto+Slab:wght@400;600;700;900&display=swap');
-        *{margin:0;padding:0;box-sizing:border-box}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        @keyframes pulseGlow{0%,100%{box-shadow:0 0 0 0 ${C.blue}44}50%{box-shadow:0 0 0 10px ${C.blue}00}}
-        @keyframes fadeSlideUp{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-        .sb-scroll::-webkit-scrollbar{width:4px}.sb-scroll::-webkit-scrollbar-track{background:transparent}.sb-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:4px}
-        .loc-btn:hover{background:rgba(255,255,255,0.05)!important}
-        .tb-btn:hover{background:rgba(255,255,255,0.07)!important;color:#fff!important}
-      `}</style>
+    <div className="px" style={{ width: "100vw", height: "100vh", position: "relative", overflow: "hidden", background: C.bg }}>
+      <style>{GLOBAL_CSS}</style>
 
       <div ref={mapRef} style={{ position: "absolute", inset: 0, zIndex: 1 }} />
 
       {mapLoading && (
-        <div style={{ position: "absolute", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: C.bg }}>
-          <div style={{ width: 48, height: 48, border: "2px solid " + C.blue + "22", borderTopColor: C.blue, borderRadius: "50%", animation: "spin 1s linear infinite" }} />
-          <p style={{ marginTop: 20, color: C.blue, fontSize: 12, letterSpacing: 3, textTransform: "uppercase" }}>Loading Ullo</p>
+        <div style={{ position: "absolute", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, background: C.bg }}>
+          <div className="px-spin" />
+          <div className="px-label">Loading terrain · Ullo, Upper West Region</div>
         </div>
       )}
 
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 101, height: 52, display: focusMode ? "none" : "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", background: "rgba(12,16,22,0.62)", backdropFilter: "blur(40px) saturate(180%)", WebkitBackdropFilter: "blur(40px) saturate(180%)", borderBottom: "1px solid rgba(255,255,255,0.07)", boxShadow: "0 4px 24px rgba(0,0,0,0.35)", pointerEvents: "auto" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 0, flexShrink: 0 }}>
-          <span style={{ fontSize: 14, color: "#fff", letterSpacing: 2, textTransform: "uppercase", fontWeight: 700, fontFamily: "'Inter',system-ui,sans-serif" }}>Ullo Ghana</span>
-          <span style={{ width: 1, height: 16, background: "rgba(255,255,255,0.15)", margin: "0 10px" }} />
-          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", letterSpacing: 2, textTransform: "uppercase", fontWeight: 500, fontFamily: "'Inter',system-ui,sans-serif" }}>EWB–ISU Community Explorer</span>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "stretch", height: "100%", position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
-          {Object.entries(SECTIONS).map(([key, sec]) => { const active = activeSection === key; return (
-            <button key={key} onClick={() => changeSection(active ? null : key)}
-              className="tb-btn"
-              style={{ position: "relative", padding: "0 18px", height: "100%", border: "none", background: active ? "rgba(255,255,255,0.08)" : "transparent", color: active ? "#fff" : "rgba(255,255,255,0.38)", fontSize: 10, fontWeight: 600, letterSpacing: 1.3, textTransform: "uppercase", cursor: "pointer", transition: "all 0.2s", whiteSpace: "nowrap", outline: "none", fontFamily: "'Inter',system-ui,sans-serif" }}>
-              {sec.label}
-              {active && <span style={{ position: "absolute", bottom: 0, left: 8, right: 8, height: 2, background: "#fff", borderRadius: "2px 2px 0 0" }} />}
-            </button>);
-          })}
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", fontFamily: "'Inter',system-ui,sans-serif" }}>{session?.user?.user_metadata?.full_name || session?.user?.email}</div>
-            <div style={{ fontSize: 8.5, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 700, marginTop: 1, color: profile?.role === "admin" ? C.gold : profile?.role === "member" ? C.lime : C.textDim, fontFamily: "'Inter',system-ui,sans-serif" }}>{profile?.role || "supporter"}</div>
-          </div>
-          {profile?.role === "admin" && <button onClick={() => setShowAdmin(true)} className="tb-btn" style={{ padding: "5px 10px", borderRadius: 5, background: "rgba(212,168,67,0.1)", border: "1px solid rgba(212,168,67,0.25)", color: C.gold, fontSize: 10, cursor: "pointer", fontWeight: 600, fontFamily: "'Inter',system-ui,sans-serif" }}>Users</button>}
-          <button onClick={() => supabase.auth.signOut()} className="tb-btn" style={{ padding: "5px 10px", borderRadius: 5, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)", fontSize: 10, cursor: "pointer", fontFamily: "'Inter',system-ui,sans-serif" }}>Sign out</button>
-        </div>
-      </div>
-
-      {activeSection && (
-        <div style={{ position: "absolute", top: 60, left: 16, bottom: 24, width: 248, zIndex: 100, pointerEvents: "auto", display: "flex", flexDirection: "column", background: "rgba(10,14,20,0.85)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.5)", overflow: "hidden" }}>
-          <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-            <div>
-              <div style={{ fontSize: 9, letterSpacing: 2, textTransform: "uppercase", color: SECTIONS[activeSection].color, fontWeight: 700, marginBottom: 3 }}>{SECTIONS[activeSection].icon} {SECTIONS[activeSection].label}</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>{SECTIONS[activeSection].subsections.length} locations</div>
+      {/* ── Docked sidebar (navigation, search, categories, account) ── */}
+      <div className="px-side" style={{ width: SB_W, display: focusMode ? "none" : "flex" }}>
+        {sbOpen ? (<>
+          <div className="px-bar" style={{ minHeight: 48, gap: 10 }}>
+            <span className="px-glyph" style={{ width: 24, height: 24, fontSize: 11 }}>U</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+              <span className="px-title" style={{ fontSize: 12, letterSpacing: 1.6 }}>Ullo Explorer</span>
+              <span className="px-mono px-dim" style={{ fontSize: 9, letterSpacing: .4, whiteSpace: "nowrap" }}>EWB–ISU · UPPER WEST REGION, GH</span>
             </div>
-            <button onClick={() => changeSection(null)} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, color: "rgba(255,255,255,0.4)", width: 26, height: 26, cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+            <button className="px-btn min icon sm" style={{ marginLeft: "auto", width: 24, height: 24 }} title="Collapse sidebar" onClick={() => setSbOpen(false)}>«</button>
           </div>
-          <div className="sb-scroll" style={{ overflowY: "auto", flex: 1, padding: "6px 0" }}>
-            {SECTIONS[activeSection].subsections.map((sub, i) => { const isA = activeLoc?.id === sub.id, sec = SECTIONS[activeSection]; return (
-              <button key={sub.id} className="loc-btn" onClick={() => selectLoc({ ...sub, droneVideoUrl: "/drone/" + sub.id + ".m4v", sectionKey: activeSection, sectionColor: sec.color, sectionIcon: sec.icon, sectionLabel: sec.label })}
-                style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "9px 14px", border: "none", background: isA ? sec.color + "18" : "transparent", borderLeft: isA ? `2px solid ${sec.color}` : "2px solid transparent", cursor: "pointer", transition: "all 0.15s", textAlign: "left" }}>
-                <div style={{ width: 24, height: 24, borderRadius: "50%", flexShrink: 0, background: isA ? sec.color + "30" : "rgba(255,255,255,0.05)", border: "1px solid " + (isA ? sec.color + "60" : "rgba(255,255,255,0.1)"), display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: isA ? sec.color : "rgba(255,255,255,0.3)", fontWeight: 700 }}>{i + 1}</div>
-                <span style={{ fontSize: 12, color: isA ? "#fff" : "rgba(255,255,255,0.55)", fontWeight: isA ? 600 : 400, lineHeight: 1.3 }}>{sub.name}</span>
-              </button>);
+
+          <div style={{ padding: "10px 10px 6px" }}>
+            <div style={{ position: "relative" }}>
+              <span className="px-dim" style={{ position: "absolute", left: 9, top: 9, display: "flex", pointerEvents: "none" }}><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="7" cy="7" r="4.6"/><path d="M10.5 10.5L14 14" strokeLinecap="round"/></svg></span>
+              <input className="px-input" style={{ height: 30, paddingLeft: 26, fontSize: 12 }} placeholder="Search locations…" value={query}
+                onChange={e => setQuery(e.target.value)} onKeyDown={e => { if (e.key === "Escape") setQuery(""); if (e.key === "Enter" && searchHits?.length) pickLoc(searchHits[0]); }} />
+              {query && <button className="px-btn min icon sm" style={{ position: "absolute", right: 3, top: 4, width: 22, height: 22 }} onClick={() => setQuery("")}>✕</button>}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", padding: "6px 12px 6px" }}>
+            <span className="px-label">{searchHits ? "Results" : "Categories"}</span>
+            <span className="px-tag" style={{ marginLeft: "auto" }}>{searchHits ? searchHits.length + " MATCH" + (searchHits.length === 1 ? "" : "ES") : ALL_LOCATIONS.length + " OBJ"}</span>
+          </div>
+
+          <div className="px-scroll" style={{ flex: 1, overflowY: "auto", borderTop: "1px solid var(--line2)" }}>
+            {Object.entries(SECTIONS).map(([key, sec]) => {
+              const locs = ALL_LOCATIONS.filter(l => l.sectionKey === key && (!searchHits || searchHits.includes(l)));
+              if (searchHits && !locs.length) return null;
+              const open = searchHits ? true : activeSection === key;
+              return (
+                <div key={key}>
+                  <button className={"px-cat" + (activeSection === key ? " on" : "")} onClick={() => { if (!searchHits) changeSection(activeSection === key ? null : key); }}>
+                    <span className="px-sq" style={{ background: sec.color }} />
+                    <span style={{ flex: 1, textAlign: "left" }}>{sec.label}</span>
+                    <span className="px-mono" style={{ fontSize: 10, color: "var(--faint)" }}>{locs.length}</span>
+                    {!searchHits && <span className="px-mono px-dim" style={{ fontSize: 10, width: 10 }}>{open ? "▾" : "▸"}</span>}
+                  </button>
+                  {open && (
+                    <div style={{ padding: "2px 0 6px", background: "rgba(17,20,24,.35)", borderBottom: "1px solid var(--line2)" }}>
+                      {locs.map((loc, i) => { const isA = activeLoc?.id === loc.id; return (
+                        <button key={loc.id} className={"px-item" + (isA ? " on" : "")} style={{ paddingLeft: 20, height: 30 }} onClick={() => pickLoc(loc)}>
+                          <span className="n">{String(i + 1).padStart(2, "0")}</span>
+                          <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{loc.name}</span>
+                          {WATER_TESTS[loc.id] && <span className="px-tag blue" style={{ height: 16, fontSize: 8.5 }}>H₂O</span>}
+                          {!loc.realCoords && <span className="px-tag" title="Approximate position" style={{ height: 16, fontSize: 8.5 }}>~GPS</span>}
+                        </button>); })}
+                    </div>
+                  )}
+                </div>
+              );
             })}
+            {searchHits && !searchHits.length && <div className="px-mono px-dim" style={{ padding: 14, fontSize: 10.5 }}>NO LOCATIONS MATCH “{query.toUpperCase()}”</div>}
+          </div>
+
+          <div style={{ borderTop: "1px solid var(--line)", background: "var(--panel2)", padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+              <span className="px-glyph" style={{ width: 26, height: 26, fontSize: 11, color: "var(--tx)", background: "var(--head)", borderColor: "var(--line)" }}>{(userName[0] || "?").toUpperCase()}</span>
+              <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
+                <span style={{ fontSize: 12, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userName}</span>
+                {session?.user?.user_metadata?.full_name && <span className="px-mono px-dim" style={{ fontSize: 9.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session?.user?.email}</span>}
+              </div>
+              <span className={"px-tag " + roleTag}>{(profile?.role || "supporter").toUpperCase()}</span>
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button className="px-btn" style={{ flex: 1 }} onClick={resetView}><span className="i">⌂</span>Reset view</button>
+              {profile?.role === "admin" && <button className="px-btn" onClick={() => setShowAdmin(true)}>Users</button>}
+              <button className="px-btn out" onClick={() => supabase.auth.signOut()}>Sign out</button>
+            </div>
+          </div>
+        </>) : (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", height: "100%", padding: "10px 0", gap: 6 }}>
+            <button className="px-btn min icon" title="Expand sidebar" onClick={() => setSbOpen(true)}><span className="px-glyph" style={{ width: 24, height: 24, fontSize: 11 }}>U</span></button>
+            <button className="px-btn min icon" title="Search" onClick={() => setSbOpen(true)}><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="7" cy="7" r="4.6"/><path d="M10.5 10.5L14 14" strokeLinecap="round"/></svg></button>
+            <div style={{ width: 24, height: 1, background: "var(--line)", margin: "4px 0" }} />
+            {Object.entries(SECTIONS).map(([key, sec]) => (
+              <button key={key} className={"px-btn min icon" + (activeSection === key ? " railon" : "")} title={sec.label}
+                onClick={() => { changeSection(activeSection === key ? null : key); setSbOpen(true); }}>
+                <span className="px-sq" style={{ background: sec.color, width: 10, height: 10 }} />
+              </button>
+            ))}
+            <div style={{ flex: 1 }} />
+            <button className="px-btn min icon" title="Reset view" onClick={resetView}>⌂</button>
+            <button className="px-btn min icon" title="Expand sidebar" onClick={() => setSbOpen(true)}>»</button>
+          </div>
+        )}
+      </div>
+
+      {/* ── Welcome ── */}
+      {mapReady && showWelcome && !activeLoc && (
+        <div className="px-panel" style={{ position: "absolute", top: "50%", left: `calc(50% + ${SB_W / 2}px)`, transform: "translate(-50%,-50%)", zIndex: 150, width: 400, maxWidth: "calc(100vw - 32px)" }}>
+          <div className="px-bar"><span className="px-glyph">U</span><span className="px-title">Ullo Explorer</span><span className="px-tag" style={{ marginLeft: "auto" }}>{ALL_LOCATIONS.length} OBJECTS</span></div>
+          <div style={{ padding: 18 }}>
+            <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Water, sanitation &amp; community infrastructure in Ullo, Ghana</div>
+            <p className="px-muted" style={{ fontSize: 12.5, lineHeight: 1.7 }}>Labels on the map mark confirmed GPS locations. Click a label, or pick a category in the sidebar, to inspect 360° imagery, drone footage and field data.</p>
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              <button className="px-btn pri lg" onClick={() => setShowWelcome(false)}>Start exploring <span className="i">→</span></button>
+            </div>
           </div>
         </div>
       )}
 
-      {mapReady && showWelcome && !activeLoc && (
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", zIndex: 150, textAlign: "center", padding: "36px 40px", maxWidth: 420, background: C.bgCard, backdropFilter: "blur(20px)", border: "1px solid " + C.border, borderRadius: 12, backgroundImage: `radial-gradient(ellipse at 50% 0%, ${C.blue}10 0%, transparent 60%)` }}>
-          <h3 style={{ fontFamily: "Roboto Slab,serif", fontSize: 22, color: C.text, margin: "0 0 10px", fontWeight: 900 }}>Welcome to <span style={{ color: C.gold }}>Ullo</span></h3>
-          <p style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.7 }}>3D labels mark confirmed GPS locations. Click any label or use the section tabs to explore.</p>
-          <button onClick={() => setShowWelcome(false)} style={{ marginTop: 20, padding: "10px 28px", background: C.blue, border: "none", borderRadius: 6, color: "#fff", fontSize: 12, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", cursor: "pointer" }}>Start Exploring</button>
-        </div>
-      )}
-
-      <div style={{ position: "absolute", bottom: 24, right: 24, zIndex: 100, pointerEvents: "auto" }}>
-        <button onClick={resetView} style={{ padding: "8px 14px", borderRadius: 6, background: C.bgCard, border: "1px solid " + C.border, color: C.blueLight, fontSize: 11, fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase", cursor: "pointer" }}>🏠 Reset View</button>
-      </div>
 
       {activeLoc && !showPanel && !showDroneIntro && !focusMode && (
-        <div style={{ position: "absolute", bottom: 80, left: "50%", transform: "translateX(-50%)", zIndex: 200, display: "flex", flexDirection: "column", alignItems: "center", gap: 10, pointerEvents: "auto", animation: "fadeSlideUp 0.6s ease both", animationDelay: "1.5s" }}>
-          <button onClick={openPanel} style={{ padding: "16px 48px", borderRadius: 980, background: "rgba(255,255,255,0.3)", backdropFilter: "blur(60px) saturate(200%) brightness(1.2)", WebkitBackdropFilter: "blur(60px) saturate(200%) brightness(1.2)", border: "1px solid rgba(255,255,255,0.45)", color: "#fff", fontSize: 16, fontWeight: 600, letterSpacing: 0.3, cursor: "pointer", fontFamily: "-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif", boxShadow: "0 4px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.3)", textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>Details</button>
-          <button onClick={closeLoc} style={{ padding: "10px 24px", borderRadius: 980, background: "rgba(0,0,0,0.25)", backdropFilter: "blur(60px) saturate(180%)", WebkitBackdropFilter: "blur(60px) saturate(180%)", border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif", boxShadow: "0 2px 12px rgba(0,0,0,0.2)" }}>Close</button>
+        <div className="px-panel" style={{ position: "absolute", bottom: 24, left: `calc(50% + ${SB_W / 2}px)`, transform: "translateX(-50%)", zIndex: 200, pointerEvents: "auto", display: "flex", alignItems: "center", gap: 10, padding: "8px 8px 8px 12px", animation: "pxInCenter .35s ease both", animationDelay: "1.2s" }}>
+          <span className="px-sq" style={{ background: activeLoc.sectionColor || C.blue }} />
+          <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>{getLocValue(activeLoc, "name")}</span>
+            <span className="px-mono px-dim" style={{ fontSize: 9.5 }}>{(activeLoc.sectionLabel || "").toUpperCase()}</span>
+          </div>
+          <button className="px-btn pri" style={{ marginLeft: 8 }} onClick={openPanel}>Open details <span className="i">↗</span></button>
+          <button className="px-btn out icon" onClick={closeLoc}>✕</button>
         </div>
       )}
 
+      {/* ── Focus mode ── */}
       {focusMode && (
         <>
-          <div style={{ position: "absolute", inset: 0, zIndex: 590, pointerEvents: "none", boxShadow: "inset 0 0 120px 60px rgba(0,0,0,0.5), inset 0 0 300px 100px rgba(0,0,0,0.25)", background: "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.3) 100%)" }} />
-          <div style={{ position: "absolute", top: 60, left: 16, bottom: 16, width: 240, zIndex: 600, pointerEvents: "auto", display: "flex", flexDirection: "column", background: "rgba(0,0,0,0.65)", backdropFilter: "blur(16px)", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", overflow: "hidden" }}>
-            <div style={{ padding: "12px 14px 8px", borderBottom: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: C.gold, fontFamily: "Roboto,sans-serif" }}>📍 Site Locations</div>
-            </div>
-            <div style={{ flex: 1, overflowY: "auto", padding: "4px 0" }}>
+          <div style={{ position: "absolute", inset: 0, zIndex: 590, pointerEvents: "none", boxShadow: "inset 0 0 120px 60px rgba(0,0,0,0.5)", background: "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.3) 100%)" }} />
+          <div className="px-panel" style={{ position: "absolute", top: 12, left: 12, bottom: 12, width: 248, zIndex: 600, pointerEvents: "auto", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div className="px-bar"><span className="px-sq" style={{ background: "#60A5FA" }} /><span className="px-title">Site Locations</span></div>
+            <div className="px-scroll" style={{ flex: 1, overflowY: "auto", padding: "4px 0" }}>
               {CLINIC_FOCUS_POINTS.filter(fp => !fp.corner).map(fp => {
                 const sel = focusHighlight === fp.id;
                 return (
-                  <div key={fp.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", cursor: "pointer", background: sel ? "rgba(96,165,250,0.15)" : "transparent", borderLeft: sel ? "3px solid #60A5FA" : "3px solid transparent", transition: "all 0.2s" }}
-                    onMouseEnter={() => setFocusHighlight(fp.id)}
-                    onClick={() => viewFocusPhoto(fp)}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#60A5FA", flexShrink: 0, boxShadow: sel ? "0 0 6px #60A5FA" : "none" }} />
-                    <span style={{ fontSize: 11, color: sel ? "#fff" : "rgba(255,255,255,0.6)", fontFamily: "Roboto,sans-serif", fontWeight: sel ? 600 : 400, flex: 1 }}>{fp.name}</span>
-                    {sel && <button onClick={(e) => { e.stopPropagation(); viewFocusPhoto(fp); }} style={{ padding: "3px 8px", borderRadius: 4, background: "rgba(96,165,250,0.25)", border: "1px solid rgba(96,165,250,0.4)", color: "#60A5FA", fontSize: 9, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>360°</button>}
+                  <div key={fp.id} className={"px-item" + (sel ? " on" : "")} onMouseEnter={() => setFocusHighlight(fp.id)} onClick={() => viewFocusPhoto(fp)}>
+                    <span className="px-sq" style={{ background: "#60A5FA", borderRadius: "50%" }} />
+                    <span style={{ flex: 1 }}>{fp.name}</span>
+                    {sel && <button className="px-btn sm pri" onClick={(e) => { e.stopPropagation(); viewFocusPhoto(fp); }}>360°</button>}
                   </div>
                 );
               })}
-              <div style={{ padding: "6px 14px 4px", marginTop: 4 }}>
-                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: "rgba(206,220,0,0.6)", fontFamily: "Roboto,sans-serif" }}>Corner Posts</div>
-              </div>
+              <div className="px-label" style={{ padding: "10px 12px 4px" }}>Corner posts</div>
               {CLINIC_FOCUS_POINTS.filter(fp => fp.corner).map(fp => {
                 const sel = focusHighlight === fp.id;
                 return (
-                  <div key={fp.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", cursor: "pointer", background: sel ? "rgba(206,220,0,0.1)" : "transparent", borderLeft: sel ? "3px solid #cedc00" : "3px solid transparent", transition: "all 0.2s" }}
-                    onMouseEnter={() => setFocusHighlight(fp.id)}
-                    onClick={() => viewFocusPhoto(fp)}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#cedc00", flexShrink: 0, boxShadow: sel ? "0 0 6px #cedc00" : "none" }} />
-                    <span style={{ fontSize: 11, color: sel ? "#fff" : "rgba(255,255,255,0.6)", fontFamily: "Roboto,sans-serif", fontWeight: sel ? 600 : 400, flex: 1 }}>{fp.name}</span>
-                    {sel && <button onClick={(e) => { e.stopPropagation(); viewFocusPhoto(fp); }} style={{ padding: "3px 8px", borderRadius: 4, background: "rgba(206,220,0,0.2)", border: "1px solid rgba(206,220,0,0.4)", color: "#cedc00", fontSize: 9, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>360°</button>}
+                  <div key={fp.id} className={"px-item" + (sel ? " on" : "")} onMouseEnter={() => setFocusHighlight(fp.id)} onClick={() => viewFocusPhoto(fp)}>
+                    <span className="px-sq" style={{ background: "var(--orange)" }} />
+                    <span style={{ flex: 1 }}>{fp.name}</span>
+                    {sel && <button className="px-btn sm warn" onClick={(e) => { e.stopPropagation(); viewFocusPhoto(fp); }}>360°</button>}
                   </div>
                 );
               })}
             </div>
           </div>
-          <div style={{ position: "absolute", top: 16, right: 16, zIndex: 600, pointerEvents: "auto" }}>
-            <button onClick={exitFocusMode} style={{ padding: "10px 20px", borderRadius: 980, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.25)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "-apple-system,sans-serif" }}>
-              ✕ Exit Focus Mode
-            </button>
+          <div className="px-panel" style={{ position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)", zIndex: 600, pointerEvents: "none", display: "flex", alignItems: "center", gap: 10, height: 34, padding: "0 12px" }}>
+            <span className="px-tag orange">FOCUS MODE</span>
+            <span className="px-muted" style={{ fontSize: 12 }}>Ullo Clinic Site Boundary</span>
           </div>
-          <div style={{ position: "absolute", top: 16, left: "50%", transform: "translateX(-50%)", zIndex: 600, pointerEvents: "none", textAlign: "center" }}>
-            <div style={{ padding: "8px 20px", borderRadius: 980, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(12px)", border: "1px solid rgba(206,220,0,0.3)" }}>
-              <span style={{ color: C.gold, fontSize: 12, fontWeight: 700, letterSpacing: 1, fontFamily: "Roboto,sans-serif" }}>🔍 FOCUS MODE</span>
-              <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginLeft: 8, fontFamily: "Roboto,sans-serif" }}>Ullo Clinic Site Boundary</span>
-            </div>
+          <div style={{ position: "absolute", top: 12, right: 12, zIndex: 600, pointerEvents: "auto" }}>
+            <button className="px-btn" onClick={exitFocusMode}><span className="i">✕</span>Exit focus mode</button>
           </div>
           {focusPhoto && (
-            <div style={{ position: "absolute", inset: 0, zIndex: 700, background: "rgba(0,0,0,0.7)", display: "flex", flexDirection: "column", pointerEvents: "auto" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px", flexShrink: 0 }}>
-                <div>
-                  <h3 style={{ fontFamily: "Roboto Slab,serif", fontSize: 18, fontWeight: 900, color: "#fff", margin: 0 }}>{focusPhoto.name}</h3>
-                  <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "monospace", margin: "4px 0 0" }}>📍 {focusPhoto.lat.toFixed(6)}°N, {Math.abs(focusPhoto.lng).toFixed(6)}°W</p>
-                </div>
-                <button onClick={() => setFocusPhoto(null)} style={{ width: 38, height: 38, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+            <div style={{ position: "absolute", inset: 0, zIndex: 700, background: "rgba(17,20,24,0.9)", display: "flex", flexDirection: "column", pointerEvents: "auto" }}>
+              <div className="px-bar" style={{ minHeight: 44, padding: "0 14px" }}>
+                <span className="px-sq" style={{ background: focusPhoto.corner ? "var(--orange)" : "#60A5FA" }} />
+                <span style={{ fontSize: 14, fontWeight: 600 }}>{focusPhoto.name}</span>
+                <span className="px-tag">{coordStr(focusPhoto.lat, focusPhoto.lng, 6)}</span>
+                <button className="px-btn out icon" style={{ marginLeft: "auto" }} onClick={() => setFocusPhoto(null)}>✕</button>
               </div>
-              <div style={{ flex: 1, padding: "0 20px 20px" }}>
+              <div style={{ flex: 1, padding: 14 }}>
                 <PanoViewer photoUrl={"/pano/clinic_site/" + focusPhoto.file} locationName={focusPhoto.name} tall={true} />
               </div>
             </div>
@@ -1617,105 +1859,101 @@ export default function UlloExplorer({ session, profile }) {
         <DroneIntro url={activeLoc.droneVideoUrl} locationName={activeLoc.name} onSkip={skipDroneIntro} />
       )}
 
+      {/* ── Detail panel ── */}
       {activeLoc && showPanel && (<>
         {!panelMin && <div onClick={closeLoc} style={{ position: "absolute", inset: 0, zIndex: 500, background: "rgba(0,0,0,0.35)", pointerEvents: "auto" }} />}
-        <div style={{
+        <div className={panelMin ? "px-panel" : ""} style={{
           position: "absolute", zIndex: 501,
-          ...(panelMin ? { bottom: 24, right: 24, width: "40%", maxWidth: 480, height: "45%", borderRadius: 12 } : { top: 0, left: 0, right: 0, bottom: 0, borderRadius: 0 }),
-          background: C.bgCard, backdropFilter: "blur(24px)",
-          border: panelMin ? `1px solid ${C.border}` : "none",
-          boxShadow: panelMin ? "0 8px 32px rgba(0,0,0,0.6)" : "none",
+          ...(panelMin ? { bottom: 16, right: 16, width: "40%", maxWidth: 480, height: "45%" } : { top: 0, left: 0, right: 0, bottom: 0, background: "var(--app)" }),
           overflow: "hidden", display: "flex", flexDirection: "column",
-          backgroundImage: `radial-gradient(ellipse at 50% 0%, ${C.blue}08 0%, transparent 40%)`,
-          transition: "all 0.4s cubic-bezier(0.22,1,0.36,1)", pointerEvents: "auto",
+          transition: "all 0.3s cubic-bezier(0.22,1,0.36,1)", pointerEvents: "auto",
         }}>
-          <div style={{ padding: panelMin ? "10px 14px 6px" : "16px 24px 10px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexShrink: 0 }}>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 4, border: `1px solid ${(activeLoc.sectionColor || C.blue)}33`, background: `${(activeLoc.sectionColor || C.blue)}12`, color: activeLoc.sectionColor || C.blue, fontSize: panelMin ? 9 : 10, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 }}>{activeLoc.sectionIcon} {activeLoc.sectionLabel}</span>
-              {editingField === "name" ? (
-                <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4 }}>
-                  <input value={editValue} onChange={e => setEditValue(e.target.value)} autoFocus
-                    onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit(); }}
-                    style={{ flex: 1, fontFamily: "Roboto Slab,serif", fontSize: panelMin ? 16 : 24, fontWeight: 900, color: C.text, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(206,220,0,0.4)", borderRadius: 6, padding: "6px 10px", outline: "none" }} />
-                  <button onClick={saveEdit} style={{ padding: "6px 14px", borderRadius: 6, border: "none", background: "rgba(206,220,0,0.2)", color: "#cedc00", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Save</button>
-                  <button onClick={cancelEdit} style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "rgba(255,255,255,0.4)", fontSize: 11, cursor: "pointer" }}>Cancel</button>
-                </div>
-              ) : (
-                <h2 style={{ fontFamily: "Roboto Slab,serif", fontSize: panelMin ? 16 : 26, fontWeight: 900, color: C.text, lineHeight: 1.2 }}>{getLocValue(activeLoc, "name")}</h2>
-              )}
-            </div>
-            <div style={{ display: "flex", gap: 6, flexShrink: 0, marginLeft: 12 }}>
-              <button onClick={() => setPanelMin(!panelMin)} title={panelMin ? "Expand" : "Minimize"} style={{ width: 34, height: 34, borderRadius: "50%", border: "1px solid " + C.borderSubtle, background: C.surface, color: C.text, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>{panelMin ? "⤢" : "⤡"}</button>
-              <button onClick={closeLoc} style={{ width: 34, height: 34, borderRadius: "50%", border: "1px solid " + C.borderSubtle, background: C.surface, color: C.text, fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>✕</button>
-            </div>
-          </div>
-          <div style={{ padding: panelMin ? "0 14px 14px" : "0 24px 24px", overflowY: "auto", flex: 1 }}>
-            <p style={{ color: C.textDim, fontSize: 11, fontFamily: "monospace", marginBottom: 12 }}>📍 {activeLoc.lat.toFixed(4)}°N, {Math.abs(activeLoc.lng).toFixed(4)}°W · Jirapa District, Upper West Region</p>
-            {droneAvail[activeLoc.id] && (
-              <button onClick={() => { setShowPanel(false); setShowDroneIntro(true); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 980, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.5)", fontSize: 11, cursor: "pointer", fontFamily: "Roboto,sans-serif", marginBottom: 12, transition: "all 0.2s" }}
-                onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.color = "#fff"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.color = "rgba(255,255,255,0.5)"; }}>
-                🎬 Watch drone flyover
-              </button>
-            )}
-            {activeLoc.id === "c1" && (
-              <button onClick={enterFocusMode} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 980, background: "rgba(206,220,0,0.08)", border: "1px solid rgba(206,220,0,0.25)", color: C.gold, fontSize: 11, cursor: "pointer", fontFamily: "Roboto,sans-serif", marginBottom: 12, marginLeft: droneAvail[activeLoc.id] ? 8 : 0, transition: "all 0.2s" }}
-                onMouseEnter={e => { e.currentTarget.style.background = "rgba(206,220,0,0.18)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "rgba(206,220,0,0.08)"; }}>
-                🔍 Focus Mode — Clinic Boundary
-              </button>
-            )}
-            <MediaViewer loc={activeLoc} tall={!panelMin} />
-            {editingField === "description" ? (
-              <div style={{ marginTop: 14 }}>
-                <textarea value={editValue} onChange={e => setEditValue(e.target.value)} autoFocus rows={6}
-                  style={{ width: "100%", color: C.text, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(206,220,0,0.4)", borderRadius: 6, padding: "10px 12px", fontSize: 13, lineHeight: 1.7, fontFamily: "Roboto,sans-serif", outline: "none", resize: "vertical" }} />
-                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                  <button onClick={saveEdit} style={{ padding: "6px 16px", borderRadius: 6, border: "none", background: "rgba(206,220,0,0.2)", color: "#cedc00", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Save</button>
-                  <button onClick={cancelEdit} style={{ padding: "6px 16px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "rgba(255,255,255,0.4)", fontSize: 11, cursor: "pointer" }}>Cancel</button>
-                </div>
+          <div className="px-bar" style={{ minHeight: panelMin ? 38 : 48, padding: panelMin ? "0 10px" : "0 16px", gap: 10 }}>
+            <span className="px-sq" style={{ background: activeLoc.sectionColor || C.blue }} />
+            <span className="px-label" style={{ color: "var(--mut)" }}>{activeLoc.sectionLabel}</span>
+            <span className="px-dim">/</span>
+            {editingField === "name" ? (
+              <div style={{ display: "flex", gap: 6, alignItems: "center", flex: 1 }}>
+                <input className="px-input" style={{ height: 28, fontSize: 14, fontWeight: 600 }} value={editValue} onChange={e => setEditValue(e.target.value)} autoFocus
+                  onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit(); }} />
+                <button className="px-btn pri" onClick={saveEdit}>Save</button>
+                <button className="px-btn out" onClick={cancelEdit}>Cancel</button>
               </div>
             ) : (
-              getLocValue(activeLoc, "description") && <p style={{ color: C.textMuted, fontSize: 13, lineHeight: 1.8, marginTop: 14, whiteSpace: "pre-line" }}>{getLocValue(activeLoc, "description")}</p>
+              <h2 style={{ fontSize: panelMin ? 13 : 16, fontWeight: 600, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getLocValue(activeLoc, "name")}</h2>
             )}
-            {activeLoc.tags?.length > 0 && <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>{activeLoc.tags.map(tag => (<span key={tag} style={{ padding: "2px 8px", borderRadius: 4, fontSize: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.35)" }}>{tag}</span>))}</div>}
-            {activeLoc.sectionKey === "boreholes" && activeLoc.data && <BoreholeDataCard data={activeLoc.data} />}
-            {(canEdit(profile) || canUpload(profile) || isAdmin(profile)) && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 18, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-                {canEdit(profile) && editingField !== "description" && (
-                  <button onClick={() => startEdit("description")} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid rgba(206,220,0,0.3)", background: "rgba(206,220,0,0.08)", color: "#cedc00", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto,sans-serif", letterSpacing: 0.5 }}>Edit Description</button>
-                )}
-                {canEdit(profile) && editingField !== "name" && (
-                  <button onClick={() => startEdit("name")} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid rgba(206,220,0,0.3)", background: "rgba(206,220,0,0.08)", color: "#cedc00", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto,sans-serif", letterSpacing: 0.5 }}>Edit Name</button>
-                )}
-                {canUpload(profile) && (
-                  <button onClick={() => startUpload("photo")} disabled={uploading} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid rgba(0,101,178,0.3)", background: "rgba(0,101,178,0.08)", color: C.blueLight, fontSize: 11, fontWeight: 600, cursor: uploading ? "wait" : "pointer", fontFamily: "Roboto,sans-serif", letterSpacing: 0.5, opacity: uploading ? 0.5 : 1 }}>Upload Photos</button>
-                )}
-                {canUpload(profile) && (
-                  <button onClick={() => startUpload("video")} disabled={uploading} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid rgba(0,101,178,0.3)", background: "rgba(0,101,178,0.08)", color: C.blueLight, fontSize: 11, fontWeight: 600, cursor: uploading ? "wait" : "pointer", fontFamily: "Roboto,sans-serif", letterSpacing: 0.5, opacity: uploading ? 0.5 : 1 }}>Upload Video</button>
-                )}
-                {isAdmin(profile) && (
-                  <button onClick={() => alert("Edit Coordinates — coming soon")} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid rgba(212,168,67,0.3)", background: "rgba(212,168,67,0.08)", color: C.gold, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto,sans-serif", letterSpacing: 0.5 }}>Edit Coordinates</button>
-                )}
-                {isAdmin(profile) && (
-                  <button onClick={() => alert("Add Location — coming soon")} style={{ padding: "8px 16px", borderRadius: 6, border: "1px solid rgba(212,168,67,0.3)", background: "rgba(212,168,67,0.08)", color: C.gold, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "Roboto,sans-serif", letterSpacing: 0.5 }}>Add Location</button>
-                )}
-              </div>
-            )}
-            <input ref={fileInputRef} type="file" multiple
-              accept={uploadMode === "video" ? "video/*" : "image/*"}
-              onChange={handleFileSelect}
-              style={{ display: "none" }} />
-            {uploadMsg && (
-              <div style={{ marginTop: 10, padding: "8px 14px", borderRadius: 6, background: uploading ? "rgba(0,101,178,0.12)" : "rgba(59,168,82,0.12)", border: "1px solid " + (uploading ? "rgba(0,101,178,0.3)" : "rgba(59,168,82,0.3)"), fontSize: 12, color: uploading ? C.blueLight : "#5DC87A", fontFamily: "Roboto,sans-serif", display: "flex", alignItems: "center", gap: 8 }}>
-                {uploading && <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(171,202,233,0.3)", borderTopColor: C.blueLight, borderRadius: "50%", animation: "spin 1s linear infinite" }} />}
-                {uploadMsg}
-              </div>
-            )}
+            {!panelMin && WATER_TESTS[activeLoc.id] && <span className="px-tag blue">WATER DATA</span>}
+            <div style={{ display: "flex", gap: 4, marginLeft: "auto", flexShrink: 0 }}>
+              <button className="px-btn out icon" onClick={() => setPanelMin(!panelMin)} title={panelMin ? "Expand" : "Minimize"}>{panelMin ? "⤢" : "⤡"}</button>
+              <button className="px-btn out icon" onClick={closeLoc} title="Close">✕</button>
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 8, padding: panelMin ? "8px 14px" : "10px 24px 14px", borderTop: "1px solid " + C.borderSubtle, flexShrink: 0 }}>
-            <button onClick={() => navLoc("prev")} style={{ flex: 1, padding: panelMin ? "7px 12px" : "9px 16px", borderRadius: 6, border: "1px solid " + C.border, background: C.bgPanel, color: C.blueLight, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>← Previous</button>
-            <button onClick={() => navLoc("next")} style={{ flex: 1, padding: panelMin ? "7px 12px" : "9px 16px", borderRadius: 6, border: "1px solid " + C.border, background: C.bgPanel, color: C.blueLight, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Next →</button>
+
+          <div className="px-scroll" style={{ overflowY: "auto", flex: 1, padding: panelMin ? 10 : "14px 16px 20px" }}>
+            <div style={{ maxWidth: panelMin ? "none" : 1400, margin: "0 auto" }}>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginBottom: 10 }}>
+                <span className="px-tag">{coordStr(activeLoc.lat, activeLoc.lng)}</span>
+                <span className="px-tag">JIRAPA DISTRICT · UPPER WEST</span>
+                {!activeLoc.realCoords && <span className="px-tag orange">APPROX. POSITION</span>}
+                <span style={{ flex: 1 }} />
+                {droneAvail[activeLoc.id] && <button className="px-btn" onClick={() => { setShowPanel(false); setShowDroneIntro(true); }}><span className="i">▶</span>Drone flyover</button>}
+                {activeLoc.id === "c1" && <button className="px-btn warn" onClick={enterFocusMode}><span className="i">◎</span>Focus mode · clinic boundary</button>}
+              </div>
+
+              <MediaViewer loc={activeLoc} tall={!panelMin} />
+
+              {editingField === "description" ? (
+                <div style={{ marginTop: 14 }}>
+                  <textarea className="px-input" value={editValue} onChange={e => setEditValue(e.target.value)} autoFocus rows={6} />
+                  <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                    <button className="px-btn pri" onClick={saveEdit}>Save</button>
+                    <button className="px-btn out" onClick={cancelEdit}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                getLocValue(activeLoc, "description") && (
+                  <div style={{ marginTop: 14 }}>
+                    <div className="px-label" style={{ marginBottom: 6 }}>Description</div>
+                    <p className="px-muted" style={{ fontSize: 13, lineHeight: 1.75, whiteSpace: "pre-line", maxWidth: 820 }}>{getLocValue(activeLoc, "description")}</p>
+                  </div>
+                )
+              )}
+              {activeLoc.tags?.length > 0 && <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 10 }}>{activeLoc.tags.map(tag => <span key={tag} className="px-tag">{tag}</span>)}</div>}
+
+              <div style={{ display: "grid", gridTemplateColumns: panelMin ? "1fr" : "repeat(auto-fill, minmax(420px, 1fr))", gap: 14, alignItems: "start" }}>
+                {WATER_TESTS[activeLoc.id] && <WaterTestCard t={WATER_TESTS[activeLoc.id]} />}
+                {activeLoc.sectionKey === "boreholes" && activeLoc.data && <BoreholeDataCard data={activeLoc.data} />}
+              </div>
+
+              {(canEdit(profile) || canUpload(profile) || isAdmin(profile)) && (
+                <div style={{ marginTop: 18, paddingTop: 12, borderTop: "1px solid var(--line)" }}>
+                  <div className="px-label" style={{ marginBottom: 8 }}>Actions</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {canEdit(profile) && editingField !== "description" && <button className="px-btn" onClick={() => startEdit("description")}><span className="i">✎</span>Edit description</button>}
+                    {canEdit(profile) && editingField !== "name" && <button className="px-btn" onClick={() => startEdit("name")}><span className="i">✎</span>Edit name</button>}
+                    {canUpload(profile) && <button className="px-btn" onClick={() => startUpload("photo")} disabled={uploading}><span className="i">↑</span>Upload photos</button>}
+                    {canUpload(profile) && <button className="px-btn" onClick={() => startUpload("video")} disabled={uploading}><span className="i">↑</span>Upload video</button>}
+                    {isAdmin(profile) && <button className="px-btn warn" onClick={() => alert("Edit Coordinates — coming soon")}><span className="i">⌖</span>Edit coordinates</button>}
+                    {isAdmin(profile) && <button className="px-btn warn" onClick={() => alert("Add Location — coming soon")}><span className="i">+</span>Add location</button>}
+                  </div>
+                </div>
+              )}
+              <input ref={fileInputRef} type="file" multiple
+                accept={uploadMode === "video" ? "video/*" : "image/*"}
+                onChange={handleFileSelect}
+                style={{ display: "none" }} />
+              {uploadMsg && (
+                <div className={"px-callout " + (uploading ? "info" : "ok")} style={{ marginTop: 10, alignItems: "center" }}>
+                  {uploading && <span className="px-spin" style={{ width: 14, height: 14, borderWidth: 2 }} />}
+                  {uploadMsg}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 6, padding: panelMin ? "6px 10px" : "8px 16px", borderTop: "1px solid var(--line)", background: "var(--panel)", flexShrink: 0 }}>
+            <button className="px-btn" style={{ flex: 1 }} onClick={() => navLoc("prev")}><span className="i">←</span>Previous</button>
+            <button className="px-btn" style={{ flex: 1 }} onClick={() => navLoc("next")}>Next<span className="i">→</span></button>
           </div>
         </div>
       </>)}
