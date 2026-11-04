@@ -4,7 +4,7 @@ import { GLOBAL_CSS } from "./theme";
 
 
 
-export default function Auth() {
+export default function Auth({ onCancel }) {
   var [mode, setMode] = useState("login"); // "login" | "signup" | "forgot"
   var [email, setEmail] = useState("");
   var [password, setPassword] = useState("");
@@ -40,8 +40,8 @@ export default function Auth() {
   };
 
   var title = mode === "login" ? "Sign in" : mode === "signup" ? "Create account" : "Reset password";
-  var hint = mode === "login" ? "Sign in to access the Ullo Community Explorer."
-    : mode === "signup" ? "Create an account with your @iastate.edu email."
+  var hint = mode === "login" ? "Sign in to edit locations and upload media. You don't need an account to view the map."
+    : mode === "signup" ? "Create an account with your @iastate.edu email. Accounts are for EWB-ISU members who edit or upload content."
     : "Enter your email to receive a password reset link.";
 
   return (
@@ -56,6 +56,7 @@ export default function Auth() {
             <span className="px-title" style={{ fontSize:13, letterSpacing:1.8 }}>Ullo Explorer</span>
             <span className="px-mono px-dim" style={{ fontSize:10 }}>ENGINEERS WITHOUT BORDERS · ISU</span>
           </div>
+          {onCancel && <button className="px-btn out sm" style={{ marginLeft:"auto" }} onClick={onCancel}>← Back to map</button>}
         </div>
 
         <div className="px-panel">

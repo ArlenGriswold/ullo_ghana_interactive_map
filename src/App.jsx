@@ -1253,7 +1253,7 @@ function MediaViewer({ loc, tall }) {
 
 
 // ─── Main Component ──────────────────────────────────────────────────────────
-export default function UlloExplorer({ session, profile }) {
+export default function UlloExplorer({ session, profile, onSignIn }) {
   const [sbOpen, setSbOpen] = useState(true);
   const [query, setQuery] = useState("");
   const pendingLoc = useRef(null);
@@ -1743,19 +1743,33 @@ export default function UlloExplorer({ session, profile }) {
           </div>
 
           <div style={{ borderTop: "1px solid var(--line)", background: "var(--panel2)", padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-              <span className="px-glyph" style={{ width: 26, height: 26, fontSize: 11, color: "var(--tx)", background: "var(--head)", borderColor: "var(--line)" }}>{(userName[0] || "?").toUpperCase()}</span>
-              <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
-                <span style={{ fontSize: 12, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userName}</span>
-                {session?.user?.user_metadata?.full_name && <span className="px-mono px-dim" style={{ fontSize: 9.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session?.user?.email}</span>}
+            {session ? (<>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                <span className="px-glyph" style={{ width: 26, height: 26, fontSize: 11, color: "var(--tx)", background: "var(--head)", borderColor: "var(--line)" }}>{(userName[0] || "?").toUpperCase()}</span>
+                <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
+                  <span style={{ fontSize: 12, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userName}</span>
+                  {session?.user?.user_metadata?.full_name && <span className="px-mono px-dim" style={{ fontSize: 9.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session?.user?.email}</span>}
+                </div>
+                <span className={"px-tag " + roleTag}>{(profile?.role || "supporter").toUpperCase()}</span>
               </div>
-              <span className={"px-tag " + roleTag}>{(profile?.role || "supporter").toUpperCase()}</span>
-            </div>
-            <div style={{ display: "flex", gap: 6 }}>
-              <button className="px-btn" style={{ flex: 1 }} onClick={resetView}><span className="i">⌂</span>Reset view</button>
-              {profile?.role === "admin" && <button className="px-btn" onClick={() => setShowAdmin(true)}>Users</button>}
-              <button className="px-btn out" onClick={() => supabase.auth.signOut()}>Sign out</button>
-            </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                <button className="px-btn" style={{ flex: 1 }} onClick={resetView}><span className="i">⌂</span>Reset view</button>
+                {profile?.role === "admin" && <button className="px-btn" onClick={() => setShowAdmin(true)}>Users</button>}
+                <button className="px-btn out" onClick={() => supabase.auth.signOut()}>Sign out</button>
+              </div>
+            </>) : (<>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                <span className="px-glyph" style={{ width: 26, height: 26, fontSize: 11, color: "var(--mut)", background: "var(--head)", borderColor: "var(--line)" }}>◎</span>
+                <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
+                  <span style={{ fontSize: 12, fontWeight: 500 }}>Viewing as guest</span>
+                  <span className="px-mono px-dim" style={{ fontSize: 9.5 }}>EWB-ISU MEMBERS CAN SIGN IN</span>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                <button className="px-btn" style={{ flex: 1 }} onClick={resetView}><span className="i">⌂</span>Reset view</button>
+                <button className="px-btn pri" onClick={onSignIn}>Sign in</button>
+              </div>
+            </>)}
           </div>
         </>) : (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", height: "100%", padding: "10px 0", gap: 6 }}>

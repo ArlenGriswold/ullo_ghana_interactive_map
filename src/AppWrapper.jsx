@@ -8,6 +8,7 @@ export default function AppWrapper() {
   var [session, setSession] = useState(null);
   var [profile, setProfile] = useState(null);
   var [loading, setLoading] = useState(true);
+  var [showAuth, setShowAuth] = useState(false);
 
   async function fetchProfile(userId) {
     var { data, error } = await supabase
@@ -64,7 +65,8 @@ export default function AppWrapper() {
     );
   }
 
-  if (!session) return <Auth />;
+  // Anyone can view the map. Signing in is only needed to edit or upload.
+  if (!session && showAuth) return <Auth onCancel={function() { setShowAuth(false); }} />;
 
-  return <UlloExplorer session={session} profile={profile} />;
+  return <UlloExplorer session={session} profile={session ? profile : null} onSignIn={function() { setShowAuth(true); }} />;
 }
