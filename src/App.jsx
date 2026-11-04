@@ -283,6 +283,10 @@ const ALL_LOCATIONS = Object.entries(SECTIONS).flatMap(([sk, sec]) =>
 const LABELED_LOCATIONS = ALL_LOCATIONS.filter(l => l.realCoords);
 
 // ─── Focus Mode label helpers ────────────────────────────────────────────────
+// Google Maps release channel. 3D Maps is in the stable "weekly" channel.
+// If markers or labels misbehave, try "beta"; "alpha" shows a dev-only banner.
+const MAPS_CHANNEL = "weekly";
+
 // ── Map label rendering ──
 // The 3D map draws <img> labels at their raw pixel size, so pixel density and
 // on-map size are tied together in "img" mode (2 = the normal label size).
@@ -1604,7 +1608,7 @@ export default function UlloExplorer({ session, profile, onSignIn }) {
     if (!mapRef.current || initRef.current) return;
     initRef.current = true;
     if (!window.google?.maps) {
-      await new Promise(r => { const s = document.createElement("script"); s.src = `https://maps.googleapis.com/maps/api/js?key=${key}&v=alpha&libraries=maps3d`; s.async = true; s.onload = r; document.head.appendChild(s); });
+      await new Promise(r => { const s = document.createElement("script"); s.src = `https://maps.googleapis.com/maps/api/js?key=${key}&v=${MAPS_CHANNEL}&libraries=maps3d`; s.async = true; s.onload = r; document.head.appendChild(s); });
     }
     const libs = await google.maps.importLibrary("maps3d");
     const map3d = new libs.Map3DElement({ center: { lat: WORLD.lat, lng: WORLD.lng, altitude: 0 }, range: 1500, tilt: 55, heading: 0, mode: "SATELLITE" });
