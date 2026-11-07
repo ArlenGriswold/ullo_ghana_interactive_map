@@ -7,6 +7,16 @@ import { WATER_TESTS, WATER_SITES, WATER_PARAMS, WATER_XLSX_URL } from "./waterT
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+// Photos and videos load straight from Supabase's CDN rather than being
+// relayed through Vercel (faster, and doesn't use Vercel bandwidth).
+const MEDIA_BASE = (import.meta.env.VITE_SUPABASE_URL || "").replace(/\/$/, "") + "/storage/v1/object/public/pano";
+function mediaUrl(u) {
+  if (!u || !MEDIA_BASE.startsWith("http")) return u;
+  if (u.startsWith("/pano/")) return MEDIA_BASE + u.slice(5);
+  if (u.startsWith("/drone/")) return MEDIA_BASE + "/drone/" + u.slice(7);
+  return u;
+}
 const WORLD = { lat: 10.6910, lng: -2.5658, altitude: 290 };
 
 // ─── Role Permissions ────────────────────────────────────────────────────────
@@ -744,9 +754,10 @@ function PanoViewer({ photoUrl, photoUrls, locationName, tall }) {
       if (!window.pannellum) { setPhotoStatus("error"); return; }
       if (vRef.current) vRef.current.destroy();
       vRef.current = window.pannellum.viewer(ref.current, {
-        type: "equirectangular", panorama: p.url, autoLoad: true,
+        type: "equirectangular", panorama: mediaUrl(p.url), autoLoad: true,
         yaw: p.yaw, pitch: p.pitch, hfov: p.hfov,
         compass: true, showZoomCtrl: true, showFullscreenCtrl: true, title: locationName,
+        disableKeyboardCtrl: true, keyboardZoom: false,
       });
       vRef.current.on("load", () => { if (live()) setPhotoStatus("ready"); });
       vRef.current.on("error", (msg) => { if (live()) { console.warn("360 photo failed to load:", p.url, msg); setPhotoStatus("error"); } });
@@ -772,6 +783,24 @@ function PanoViewer({ photoUrl, photoUrls, locationName, tall }) {
     })();
     return () => { if (coordsRef.current) cancelAnimationFrame(coordsRef.current); if (vRef.current) { vRef.current.destroy(); vRef.current = null; } };
   }, [photoUrl_, locationName]);
+
+  // ← / → switch photos. Space does nothing here.
+  const photoNav = useRef(null);
+  photoNav.current = (d) => { if (photos.length > 1) setIdx(i => (i + d + photos.length) % photos.length); };
+  useEffect(() => {
+    const onKey = (e) => {
+      const t = e.target;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+        e.preventDefault();
+        if (!e.repeat) photoNav.current?.(e.key === "ArrowRight" ? 1 : -1);
+      } else if (e.code === "Space" || e.key === " ") {
+        if (document.activeElement?.closest?.(".px-frame")) { e.preventDefault(); document.activeElement.blur(); }
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const copyCoords = () => {
     const c = liveCoords.current;
@@ -799,9 +828,9 @@ function PanoViewer({ photoUrl, photoUrls, locationName, tall }) {
       </div>
       {photos.length > 1 && (
         <div className="px-hud" style={{ bottom: 10, left: "50%", transform: "translateX(-50%)", height: 30, padding: "0 3px", gap: 2 }}>
-          <button className="px-btn min icon sm" style={{ width: 24, height: 24 }} onClick={() => setIdx((idx - 1 + photos.length) % photos.length)}>←</button>
+          <button onMouseDown={e => e.preventDefault()} className="px-btn min icon sm" style={{ width: 24, height: 24 }} onClick={() => setIdx((idx - 1 + photos.length) % photos.length)}>←</button>
           <span style={{ minWidth: 54, textAlign: "center", color: "var(--tx)" }}>{String(idx + 1).padStart(2, "0")} / {String(photos.length).padStart(2, "0")}</span>
-          <button className="px-btn min icon sm" style={{ width: 24, height: 24 }} onClick={() => setIdx((idx + 1) % photos.length)}>→</button>
+          <button onMouseDown={e => e.preventDefault()} className="px-btn min icon sm" style={{ width: 24, height: 24 }} onClick={() => setIdx((idx + 1) % photos.length)}>→</button>
         </div>
       )}
     </div>
@@ -1037,7 +1066,7 @@ function PanoVideo({ videoUrls, listing, locationName, tall, btnHidden, onToggle
     cleanup();
     const run = ++runRef.current;
     const live = () => runRef.current === run;
-    const url = typeof current === "string" ? current : current.url;
+    const url = mediaUrl(typeof current === "string" ? current : current.url);
     (async () => {
       if (!window.THREE) {
         await new Promise(r => { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"; s.onload = r; s.onerror = r; document.head.appendChild(s); setTimeout(r, 20000); });
@@ -1058,7 +1087,7 @@ function PanoVideo({ videoUrls, listing, locationName, tall, btnHidden, onToggle
       video.playsInline = true;
       video.loop = true;
       video.muted = false;
-      video.preload = "metadata";
+      video.preload = "auto"; // start downloading as soon as the Video tab opens
       setVidStatus("checking"); setBuffering(false); setBufPct(0); setPlayPct(0); setDuration(0);
       const loadedPct = () => {
         const d = video.duration;
@@ -1159,6 +1188,34 @@ function PanoVideo({ videoUrls, listing, locationName, tall, btnHidden, onToggle
     }
   };
 
+
+  // Space bar plays / pauses (unless you're typing in a field)
+  const toggleRef = useRef(null);
+  toggleRef.current = togglePlay;
+  const videoNav = useRef(null);
+  videoNav.current = (d) => {
+    if (videos.length < 2) return;
+    setIdx(i => (i + d + videos.length) % videos.length); setPlaying(false); setShowBtn(true);
+  };
+  useEffect(() => {
+    const onKey = (e) => {
+      const t = e.target;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {   // ← / → switch videos
+        e.preventDefault();
+        if (!e.repeat) videoNav.current?.(e.key === "ArrowRight" ? 1 : -1);
+        return;
+      }
+      if (e.code !== "Space" && e.key !== " ") return;
+      e.preventDefault();                      // don't scroll the page
+      if (e.repeat) return;
+      if (document.activeElement?.tagName === "BUTTON") document.activeElement.blur(); // avoid double-toggling a focused button
+      if (stateRef.current?.video) toggleRef.current?.();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const fmtT = (t) => { if (!t || !isFinite(t)) return "--:--"; const m = Math.floor(t / 60); return m + ":" + String(Math.floor(t % 60)).padStart(2, "0"); };
   if (!videos.length) return (
     <div className="px-empty" style={{ width: "100%", height: h }}>
@@ -1174,9 +1231,6 @@ function PanoVideo({ videoUrls, listing, locationName, tall, btnHidden, onToggle
         </div>
       )}
       {vidStatus === "checking" && <LoadingCard title="Loading video…" caption={listing ? "FINDING VIDEOS FOR THIS LOCATION" : "360 files are big"} />}
-      {vidStatus === "found" && !playing && (
-        <div className="px-hud" style={{ top: 8, left: 8 }}><span className="px-sq" style={{ background: "var(--green)", borderRadius: "50%" }} />Video ready · {fmtT(duration)}</div>
-      )}
       {vidStatus === "found" && playing && buffering && <LoadingCard title="Loading video…" caption="360 files are big" pct={bufPct} />}
       {vidStatus === "found" && (
         <div style={{ position: "absolute", left: 1, right: 1, bottom: 1, height: 3, background: "rgba(56,62,71,.7)", zIndex: 4, pointerEvents: "none" }}>
@@ -1192,9 +1246,9 @@ function PanoVideo({ videoUrls, listing, locationName, tall, btnHidden, onToggle
       )}
       {videos.length > 1 && (
         <div className="px-hud" style={{ position: "static", display: "inline-flex", marginTop: 6, height: 30, padding: "0 3px", gap: 2 }}>
-          <button className="px-btn min icon sm" style={{ width: 24, height: 24 }} onClick={() => { setIdx((idx - 1 + videos.length) % videos.length); setPlaying(false); setShowBtn(true); }}>←</button>
+          <button onMouseDown={e => e.preventDefault()} className="px-btn min icon sm" style={{ width: 24, height: 24 }} onClick={() => { setIdx((idx - 1 + videos.length) % videos.length); setPlaying(false); setShowBtn(true); }}>←</button>
           <span style={{ minWidth: 54, textAlign: "center", color: "var(--tx)" }}>{String(idx + 1).padStart(2, "0")} / {String(videos.length).padStart(2, "0")}</span>
-          <button className="px-btn min icon sm" style={{ width: 24, height: 24 }} onClick={() => { setIdx((idx + 1) % videos.length); setPlaying(false); setShowBtn(true); }}>→</button>
+          <button onMouseDown={e => e.preventDefault()} className="px-btn min icon sm" style={{ width: 24, height: 24 }} onClick={() => { setIdx((idx + 1) % videos.length); setPlaying(false); setShowBtn(true); }}>→</button>
         </div>
       )}
     </div>
@@ -1228,6 +1282,7 @@ function DroneIntro({ url, locationName, onSkip }) {
     else { v.pause(); setPlaying(false); }
   };
 
+
   const seek = (e) => {
     const v = videoRef.current;
     if (!v || !duration) return;
@@ -1245,7 +1300,7 @@ function DroneIntro({ url, locationName, onSkip }) {
         <span style={{ fontSize: 13, fontWeight: 600 }}>{locationName}</span>
         <button className="px-btn out icon" style={{ marginLeft: "auto" }} onClick={onSkip}>✕</button>
       </div>
-      <video ref={videoRef} src={url} playsInline style={{ flex: 1, minHeight: 0, width: "100%", objectFit: "contain", background: "#000", cursor: "pointer" }} onClick={togglePlay} />
+      <video ref={videoRef} src={mediaUrl(url)} preload="auto" playsInline style={{ flex: 1, minHeight: 0, width: "100%", objectFit: "contain", background: "#000", cursor: "pointer" }} onClick={togglePlay} />
       <div style={{ background: "var(--panel)", borderTop: "1px solid var(--line)" }}>
         <div onClick={seek} style={{ width: "100%", height: 4, background: "var(--line)", cursor: "pointer" }}>
           <div style={{ width: duration ? (progress / duration * 100) + "%" : "0%", height: "100%", background: "var(--blueHi)", transition: "width 0.1s linear" }} />
@@ -1382,7 +1437,7 @@ export default function UlloExplorer({ session, profile, onSignIn }) {
     const ids = ALL_LOCATIONS.map(l => l.id);
     const avail = {};
     Promise.all(ids.map(id =>
-      fetch("/drone/" + id + ".m4v", { method: "HEAD" })
+      fetch(mediaUrl("/drone/" + id + ".m4v"), { method: "HEAD" })
         .then(r => { if (r.ok) avail[id] = true; })
         .catch(() => {})
     )).then(() => setDroneAvail(avail));
