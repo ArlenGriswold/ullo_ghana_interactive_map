@@ -113,6 +113,11 @@ textarea.px-input{height:auto;padding:8px 10px;line-height:1.6;resize:vertical}
 .px-hud{position:absolute;z-index:1000;display:flex;align-items:center;gap:8px;padding:0 8px;height:26px;background:rgba(17,20,24,.82);border:1px solid var(--line);border-radius:2px;font:10.5px var(--mono);color:var(--mut);pointer-events:auto}
 .px-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:var(--panel);border:1px dashed var(--line);border-radius:2px;color:var(--dim);font:11px var(--mono);letter-spacing:.5px;text-transform:uppercase}
 
+.px-frame .pnlm-load-box,.px-frame .pnlm-error-msg{display:none!important}
+.px-frame .pnlm-container{background:#000!important}
+.px-indet{position:relative;height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.px-indet>div{position:absolute;top:0;bottom:0;width:35%;background:var(--blueHi);border-radius:2px;animation:pxIndet 1.2s ease-in-out infinite}
+@keyframes pxIndet{0%{left:-35%}100%{left:100%}}
 .px-spin{width:28px;height:28px;border:2px solid rgba(76,144,240,.2);border-top-color:var(--blueHi);border-radius:50%;animation:spin .9s linear infinite}
 .px-scroll::-webkit-scrollbar{width:8px;height:8px}.px-scroll::-webkit-scrollbar-track{background:transparent}.px-scroll::-webkit-scrollbar-thumb{background:#404854;border:2px solid var(--panel);border-radius:4px}
 `;

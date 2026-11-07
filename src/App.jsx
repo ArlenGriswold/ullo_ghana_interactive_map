@@ -692,6 +692,26 @@ class CameraController {
 }
 
 // ─── PanoViewer Component ────────────────────────────────────────────────────
+// Shared loading card for 360° photos and videos.
+// pct = number → progress bar with %, otherwise an animated bar.
+function LoadingCard({ title, caption, pct }) {
+  const hasPct = typeof pct === "number";
+  return (
+    <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 6, pointerEvents: "none" }}>
+      <div className="px-panel" style={{ width: 260, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8, textAlign: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <span style={{ fontSize: 12.5, fontWeight: 600 }}>{title}</span>
+          {hasPct && <span className="px-mono px-muted" style={{ fontSize: 11 }}>{pct}%</span>}
+        </div>
+        {hasPct
+          ? <div style={{ height: 4, background: "var(--line)", borderRadius: 2, overflow: "hidden" }}><div style={{ width: Math.max(3, pct) + "%", height: "100%", background: "var(--blueHi)", transition: "width .3s ease" }} /></div>
+          : <div className="px-indet"><div /></div>}
+        {caption && <span className="px-mono px-dim" style={{ fontSize: 9.5, letterSpacing: .4 }}>{caption}</span>}
+      </div>
+    </div>
+  );
+}
+
 function PanoViewer({ photoUrl, photoUrls, locationName, tall }) {
   const photos = (photoUrls?.length > 0 ? photoUrls : photoUrl ? [photoUrl] : []).map(p =>
     typeof p === "string" ? { url: p, yaw: 0, pitch: 0, hfov: 110 } : { yaw: 0, pitch: 0, hfov: 110, ...p }
@@ -702,6 +722,10 @@ function PanoViewer({ photoUrl, photoUrls, locationName, tall }) {
   const coordsRef = useRef(null);
   const overlayRef = useRef(null);
   const liveCoords = useRef({ yaw: 0, pitch: 0, hfov: 110 });
+  const [photoStatus, setPhotoStatus] = useState("loading"); // loading | ready | error
+  const [photoPct, setPhotoPct] = useState(null);
+  const lastPct = useRef(null);
+  const photoRun = useRef(0);
   const photo = photos[idx] || null;
   const photoUrl_ = photo?.url || "";
   const h = tall ? "calc(100vh - 220px)" : "240px";
@@ -710,17 +734,29 @@ function PanoViewer({ photoUrl, photoUrls, locationName, tall }) {
   useEffect(() => {
     if (!photoUrl_ || !ref.current) return;
     const p = photos.find(x => x.url === photoUrl_) || { url: photoUrl_, yaw: 0, pitch: 0, hfov: 110 };
+    const run = ++photoRun.current;
+    const live = () => photoRun.current === run;
+    setPhotoStatus("loading"); setPhotoPct(null); lastPct.current = null;
     (async () => {
       if (!document.getElementById("pann-css")) { const l = document.createElement("link"); l.id = "pann-css"; l.rel = "stylesheet"; l.href = "https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"; document.head.appendChild(l); }
-      if (!window.pannellum) { await new Promise(r => { const s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"; s.onload = r; document.head.appendChild(s); }); }
+      if (!window.pannellum) { await new Promise(r => { const s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"; s.onload = r; s.onerror = r; document.head.appendChild(s); setTimeout(r, 20000); }); }
+      if (!live()) return;
+      if (!window.pannellum) { setPhotoStatus("error"); return; }
       if (vRef.current) vRef.current.destroy();
       vRef.current = window.pannellum.viewer(ref.current, {
         type: "equirectangular", panorama: p.url, autoLoad: true,
         yaw: p.yaw, pitch: p.pitch, hfov: p.hfov,
         compass: true, showZoomCtrl: true, showFullscreenCtrl: true, title: locationName,
       });
+      vRef.current.on("load", () => { if (live()) setPhotoStatus("ready"); });
+      vRef.current.on("error", (msg) => { if (live()) { console.warn("360 photo failed to load:", p.url, msg); setPhotoStatus("error"); } });
       if (coordsRef.current) cancelAnimationFrame(coordsRef.current);
       const poll = () => {
+        if (live() && ref.current) {
+          const fill = ref.current.querySelector(".pnlm-lbar-fill");
+          const w = fill ? Math.round(parseFloat(fill.style.width) || 0) : 0;
+          if (w > 0 && w !== lastPct.current) { lastPct.current = w; setPhotoPct(w); }
+        }
         if (vRef.current && overlayRef.current) {
           try {
             const y = Math.round(vRef.current.getYaw() * 10) / 10;
@@ -751,6 +787,12 @@ function PanoViewer({ photoUrl, photoUrls, locationName, tall }) {
   return (
     <div className="px-frame" style={{ height: h }}>
       <div ref={ref} style={{ width: "100%", height: "100%" }} />
+      {photoStatus === "loading" && <LoadingCard title="Loading photo…" caption="360 files are big" pct={photoPct ?? undefined} />}
+      {photoStatus === "error" && (
+        <div className="px-empty" style={{ position: "absolute", inset: 0, zIndex: 5, borderStyle: "solid", gap: 8, textAlign: "center", padding: 20 }}>
+          <span style={{ fontSize: 18, opacity: 0.5 }}>◌</span>Photo not available
+        </div>
+      )}
       <div className="px-hud" style={{ top: 8, left: 8 }}>
         <span ref={overlayRef}>yaw:0  pitch:0  hfov:110</span>
         <button className="px-btn sm out" style={{ height: 18, padding: "0 6px", fontSize: 9.5 }} onClick={copyCoords}>{copied ? "✓ copied" : "copy"}</button>
@@ -959,7 +1001,7 @@ function WaterTableModal({ onClose, highlightId }) {
 }
 
 // ─── PanoVideo Component ─────────────────────────────────────────────────────
-function PanoVideo({ videoUrls, locationName, tall, btnHidden, onToggleHide }) {
+function PanoVideo({ videoUrls, listing, locationName, tall, btnHidden, onToggleHide }) {
   const videos = videoUrls || [];
   const [idx, setIdx] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -982,20 +1024,25 @@ function PanoVideo({ videoUrls, locationName, tall, btnHidden, onToggleHide }) {
     const s = stateRef.current;
     if (!s) return;
     if (s.animId) cancelAnimationFrame(s.animId);
-    if (s.video) { s.video.pause(); s.video.src = ""; }
+    if (s.video) { s.alive = false; s.video.pause(); s.video.removeAttribute("src"); try { s.video.load(); } catch (_) {} }
     if (s.onResize) window.removeEventListener("resize", s.onResize);
     if (s.renderer) { s.renderer.dispose(); s.renderer.domElement.remove(); }
     stateRef.current = null;
   };
+  const runRef = useRef(0);
 
   useEffect(() => {
+    if (listing) { cleanup(); setVidStatus("checking"); return; }
     if (!current || !containerRef.current) return;
     cleanup();
+    const run = ++runRef.current;
+    const live = () => runRef.current === run;
     const url = typeof current === "string" ? current : current.url;
     (async () => {
       if (!window.THREE) {
         await new Promise(r => { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"; s.onload = r; s.onerror = r; document.head.appendChild(s); setTimeout(r, 20000); });
       }
+      if (!live()) return;
       if (!window.THREE) { console.warn("360 player library failed to load"); setVidStatus("error"); return; }
       const THREE = window.THREE;
       const container = containerRef.current;
@@ -1023,15 +1070,29 @@ function PanoVideo({ videoUrls, locationName, tall, btnHidden, onToggleHide }) {
         }
         return Math.min(100, Math.round(end / d * 100));
       };
-      video.addEventListener("loadedmetadata", () => { setVidStatus("found"); setDuration(video.duration || 0); });
-      video.addEventListener("progress", () => setBufPct(loadedPct()));
-      video.addEventListener("timeupdate", () => { setBufPct(loadedPct()); if (video.duration) setPlayPct(video.currentTime / video.duration * 100); });
-      video.addEventListener("waiting", () => setBuffering(true));
-      video.addEventListener("stalled", () => { if (!video.paused && video.readyState < 3) setBuffering(true); });
-      video.addEventListener("playing", () => setBuffering(false));
-      video.addEventListener("canplaythrough", () => { if (!video.paused) setBuffering(false); });
-      video.addEventListener("pause", () => setBuffering(false));
-      video.addEventListener("error", () => { console.warn("360 video failed to load:", url, video.error); setVidStatus("error"); setBuffering(false); });
+      // Only react to events from the video this run created
+      const on = (ev, fn) => video.addEventListener(ev, (e) => { if (live()) fn(e); });
+      let retries = 0;
+      on("loadedmetadata", () => { setVidStatus("found"); setDuration(video.duration || 0); });
+      on("progress", () => setBufPct(loadedPct()));
+      on("timeupdate", () => { setBufPct(loadedPct()); if (video.duration) setPlayPct(video.currentTime / video.duration * 100); });
+      on("waiting", () => setBuffering(true));
+      on("stalled", () => { if (!video.paused && video.readyState < 3) setBuffering(true); });
+      on("playing", () => setBuffering(false));
+      on("canplaythrough", () => { if (!video.paused) setBuffering(false); });
+      on("pause", () => setBuffering(false));
+      on("error", () => {
+        const code = video.error?.code;       // 1 aborted · 2 network · 3 decode · 4 not found / unsupported
+        if (code === 1) return;               // we cancelled it ourselves
+        if (code === 2 && retries < 2) {      // flaky connection: keep showing "loading" and try again
+          retries++;
+          const t = video.currentTime;
+          setTimeout(() => { if (!live()) return; video.src = url; video.load(); if (t) video.currentTime = t; }, 1500 * retries);
+          return;
+        }
+        console.warn("360 video failed to load:", url, video.error);
+        setVidStatus("error"); setBuffering(false);
+      });
       video.src = url;
       const texture = new THREE.VideoTexture(video);
       texture.minFilter = THREE.LinearFilter;
@@ -1080,7 +1141,7 @@ function PanoVideo({ videoUrls, locationName, tall, btnHidden, onToggleHide }) {
       window.addEventListener("resize", state.onResize);
     })();
     return cleanup;
-  }, [current, locationName]);
+  }, [current, locationName, listing]);
 
   const togglePlay = (fromFrame) => {
     const s = stateRef.current;
@@ -1112,34 +1173,18 @@ function PanoVideo({ videoUrls, locationName, tall, btnHidden, onToggleHide }) {
           <span style={{ fontSize: 18, opacity: 0.5 }}>◌</span>Video not available
         </div>
       )}
-      {vidStatus === "checking" && (
-        <div className="px-hud" style={{ top: 8, left: 8 }}><span className="px-spin" style={{ width: 12, height: 12, borderWidth: 2 }} />Locating video…</div>
-      )}
+      {vidStatus === "checking" && <LoadingCard title="Loading video…" caption={listing ? "FINDING VIDEOS FOR THIS LOCATION" : "360 files are big"} />}
       {vidStatus === "found" && !playing && (
         <div className="px-hud" style={{ top: 8, left: 8 }}><span className="px-sq" style={{ background: "var(--green)", borderRadius: "50%" }} />Video ready · {fmtT(duration)}</div>
       )}
-      {vidStatus === "found" && playing && buffering && (
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 6, pointerEvents: "none" }}>
-          <div className="px-panel" style={{ width: 260, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span className="px-spin" style={{ width: 14, height: 14, borderWidth: 2 }} />
-              <span style={{ fontSize: 12.5, fontWeight: 600 }}>Loading video…</span>
-              <span className="px-mono px-muted" style={{ marginLeft: "auto", fontSize: 11 }}>{bufPct}%</span>
-            </div>
-            <div style={{ height: 4, background: "var(--line)", borderRadius: 2, overflow: "hidden" }}>
-              <div style={{ width: Math.max(3, bufPct) + "%", height: "100%", background: "var(--blueHi)", transition: "width .3s ease" }} />
-            </div>
-            <span className="px-mono px-dim" style={{ fontSize: 9.5, letterSpacing: .4 }}>LARGE 360° FILE · PLAYBACK STARTS AUTOMATICALLY</span>
-          </div>
-        </div>
-      )}
+      {vidStatus === "found" && playing && buffering && <LoadingCard title="Loading video…" caption="360 files are big" pct={bufPct} />}
       {vidStatus === "found" && (
         <div style={{ position: "absolute", left: 1, right: 1, bottom: 1, height: 3, background: "rgba(56,62,71,.7)", zIndex: 4, pointerEvents: "none" }}>
           <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: bufPct + "%", background: "rgba(171,179,191,.45)", transition: "width .3s ease" }} />
           <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: playPct + "%", background: "var(--blueHi)" }} />
         </div>
       )}
-      {!btnHidden && vidStatus !== "error" && !(playing && buffering) && (
+      {!btnHidden && vidStatus === "found" && !(playing && buffering) && (
         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, transition: "opacity 0.5s", opacity: showBtn ? 1 : 0, pointerEvents: showBtn ? "auto" : "none" }}>
           <button className="px-btn pri lg" onClick={() => togglePlay(false)}><span className="i">{playing ? "❚❚" : "▶"}</span>{playing ? "Pause" : "Play 360° video"}</button>
           {!playing && <button className="px-btn sm out" style={{ background: "rgba(17,20,24,.8)" }} onClick={() => { if (onToggleHide) onToggleHide(true); }}>Hide button</button>}
@@ -1216,9 +1261,48 @@ function DroneIntro({ url, locationName, onSkip }) {
 }
 
 // ─── MediaViewer ─────────────────────────────────────────────────────────────
+// Each location's media lives in its own folder of the "pano" bucket
+// (e.g. pano/rotary_borehole/). The app lists that folder so any video
+// uploaded there plays, whatever its file name. The hard-coded videoUrls
+// are only a fallback if the folder can't be listed.
+function mediaFolder(loc) {
+  const first = (loc.photoUrls || [])[0] || loc.photoUrl || (loc.videoUrls || [])[0];
+  const u = typeof first === "string" ? first : first?.url;
+  const m = u && u.match(/\/pano\/([^/]+)\//);
+  return m ? m[1] : loc.id;
+}
+const VIDEO_FILE = /\.(mp4|m4v|mov|webm)$/i;
+const folderVideoCache = new Map();
+function listFolderVideos(folder) {
+  if (folderVideoCache.has(folder)) return folderVideoCache.get(folder);
+  const p = supabase.storage.from("pano").list(folder, { limit: 1000 })
+    .then(({ data, error }) => {
+      if (error || !data) return null;
+      return data
+        .filter(f => f.id && VIDEO_FILE.test(f.name))
+        .map(f => f.name)
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+        .map(n => "/pano/" + folder + "/" + encodeURIComponent(n));
+    })
+    .catch(() => null);
+  folderVideoCache.set(folder, p);
+  return p;
+}
+
 function MediaViewer({ loc, tall }) {
+  const folder = mediaFolder(loc);
+  const [listedVideos, setListedVideos] = useState(null);
+  const knownCount = loc.videoUrls?.length || 0;
+  useEffect(() => {
+    let alive = true;
+    setListedVideos(null);
+    listFolderVideos(folder).then(v => { if (alive) setListedVideos(v); });
+    return () => { alive = false; };
+  }, [folder, knownCount]);
+  const listing = listedVideos === null;
+  const videoUrls = listedVideos?.length ? listedVideos : (loc.videoUrls || []);
   const hasPhotos = loc.photoUrls?.length > 0 || loc.photoUrl;
-  const hasVideo = loc.videoUrls?.length > 0;
+  const hasVideo = videoUrls.length > 0;
   const tabs = [];
   if (hasPhotos) tabs.push("photos");
   if (hasVideo) tabs.push("video");
@@ -1250,7 +1334,7 @@ function MediaViewer({ loc, tall }) {
         </div>
       )}
       {activeTab === "photos" && <PanoViewer photoUrl={loc.photoUrl} photoUrls={loc.photoUrls} locationName={loc.name} tall={tall} />}
-      {activeTab === "video" && <PanoVideo videoUrls={loc.videoUrls} locationName={loc.name} tall={tall} btnHidden={playBtnHidden} onToggleHide={setPlayBtnHidden} />}
+      {activeTab === "video" && <PanoVideo videoUrls={videoUrls} listing={listing} locationName={loc.name} tall={tall} btnHidden={playBtnHidden} onToggleHide={setPlayBtnHidden} />}
     </div>
   );
 }
@@ -1553,7 +1637,7 @@ export default function UlloExplorer({ session, profile, onSignIn }) {
     for (const file of files) {
       const ts = Date.now();
       const ext = file.name.split(".").pop();
-      const path = `${activeLoc.id}/${ts}_${file.name}`;
+      const path = `${mediaFolder(activeLoc)}/${ts}_${file.name}`;
 
       const { data, error } = await supabase.storage.from("pano").upload(path, file, {
         cacheControl: "3600",
@@ -1571,6 +1655,7 @@ export default function UlloExplorer({ session, profile, onSignIn }) {
 
       const { data: urlData } = supabase.storage.from("pano").getPublicUrl(path);
       results.push(urlData.publicUrl);
+      folderVideoCache.delete(mediaFolder(activeLoc)); // re-list after upload
     }
 
     const sec = SECTIONS[activeLoc.sectionKey];
