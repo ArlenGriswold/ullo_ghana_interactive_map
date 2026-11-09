@@ -565,6 +565,7 @@ class MarkerManager {
       extruded: true,
     });
     const img = buildLabelImg(loc.name, loc.sectionLabel, loc.sectionIcon, loc.markerColor || loc.sectionColor, loc.labelScale);
+    el._lw = +img.getAttribute("width") || img.width || 240; el._lh = +img.getAttribute("height") || img.height || 60; // on-screen size, for the cloud layer
     const tmpl = document.createElement("template");
     tmpl.content.appendChild(img);
     el.appendChild(tmpl);
@@ -1395,6 +1396,331 @@ function MediaViewer({ loc, tall }) {
 }
 
 
+// ─── Cloud layer ─────────────────────────────────────────────────────────────
+// Volumetric cumulus drawn with WebGL, the way flight sims do it. For every
+// pixel the shader follows that pixel's line of sight through a cloud deck
+// wrapped around the (curved) Earth, using the map's own camera, and adds up
+// light from many small steps through 3D noise (Perlin-Worley for the billowy
+// shapes, Worley for the cauliflower detail). Each step also looks toward the
+// sun to see how much cloud is in the way, so clouds shade themselves.
+//   • Where it's cloudy comes from NASA's Blue Marble cloud map, plus local
+//     clumping; around Ullo it's always partly cloudy.
+//   • From far away the detail becomes a soft haze, then the NASA map itself.
+// Clouds fade in past CLOUDS.start metres of camera range and part in the
+// middle of the screen at low altitude so the area you're looking at stays visible.
+const CLOUDS = {
+  start: 2200, full: 8000,          // camera range (m): clouds fade in between these
+  fadeOut: 4e7, gone: 6e7,          // fade out again this far away (default: never)
+  base: 1.2, top: 2.8,              // cloud deck: km above Ullo's ground (bottoms and tallest tops)
+  size: 9,                          // km: bigger = bigger, fewer clouds
+  sunElevation: 40,                 // degrees above the horizon
+  sunAzimuth: 150,                  // compass degrees the light comes from (bottom right)
+  density: 7,                       // how solid the clouds are
+  cover: 0.42,                      // how cloudy it is around Ullo (0–1)
+  shadows: 0.35,                    // darkness of cloud shadows on the ground, 0 = off
+  wind: 0.06,                       // km per second, west → east
+  map: "/clouds/earth_clouds.jpg",   // NASA Blue Marble cloud map, used from high up
+  noise: "/clouds/cloud_noise.png",  // 3D noise for the cloud shapes (64 slices of 64×64)
+  minScale: 0.08, flareSpeed: 2500 /* m/s of zoom-in for full bloom */, flare: 1 /* bloom strength, 0 = off */, maxOpacity: 0.97,
+};
+
+const CLOUD_VS = `#version 300 es
+in vec2 p; void main() { gl_Position = vec4(p, 0.0, 1.0); }`;
+
+const CLOUD_FS = `#version 300 es
+precision highp float; precision highp sampler3D;
+uniform sampler3D uNoise;                            // R Perlin-Worley, G low Worley, B fine Worley
+uniform sampler2D uCloudMap;                         // NASA cloud map (world, equirectangular)
+uniform vec2 uRes, uTan;
+uniform vec3 uCamE, uCamA, uF, uR, uU, uWind, uSunDir, uUp;
+uniform float uCb, uCt, uCg, uRb, uRt, uMid, uPix, uShown, uGlow, uHole, uHoleAmt, uMaxA, uSigma, uShadow, uMapOK, uSize, uCover;
+uniform vec4 uLab[48]; uniform int uLabN;            // map labels on screen: centre xy, half-size zw (canvas px)
+out vec4 o;
+const mat3 MR = mat3(0.00, 0.80, 0.60, -0.80, 0.36, -0.48, -0.60, -0.48, 0.64);
+float remap(float v, float a, float b, float c, float d) { return c + (v - a) * (d - c) / (b - a); }
+bool sphere(float b, float c, out float tn, out float tf) {  // ray vs sphere about Earth's centre (c = |cam|² − r²)
+  float disc = b * b - c; if (disc < 0.0) return false;
+  float q = -b - (b >= 0.0 ? 1.0 : -1.0) * sqrt(disc);
+  float r1 = q, r2 = c / q; tn = min(r1, r2); tf = max(r1, r2); return true;
+}
+// Cloud density at X (km from Ullo, wind applied), h = 0 at the base, 1 at the top.
+// lod = mip level for the pixel footprint; cov = how cloudy (0–1); dw = how much fine detail to show
+float density(vec3 X, float h, float cov, float lod, float dw) {
+  float topH = mix(0.45, 1.0, clamp(cov * 1.4, 0.0, 1.0));          // more cover → taller clouds
+  float hp = smoothstep(0.0, 0.08, h) * (1.0 - smoothstep(topH * 0.5, topH, h));
+  if (hp <= 0.0 || cov <= 0.0) return 0.0;
+  // two rotated layers at different sizes so the pattern never visibly repeats
+  vec3 n = textureLod(uNoise, X / uSize, lod).rgb;
+  vec3 n2 = dw >= 0.0 ? textureLod(uNoise, MR * X / (uSize * 2.3), max(lod - 1.2, 0.0)).rgb : n;  // (skipped for the light samples)
+  float pr = mix(n.r, n2.r, 0.4), pg = mix(n.g, n2.g, 0.4);
+  float base = clamp(remap(pr, pg - 1.0, 1.0, 0.0, 1.0), 0.0, 1.0);
+  base = clamp((base - 0.45) / 0.5, 0.0, 1.0);                     // spread out the noise range
+  float c = clamp(remap(base * hp, 1.0 - cov, 1.0, 0.0, 1.0), 0.0, 1.0);
+  if (c <= 0.0 || dw <= 0.0) return c;   // dw < 0: light sample, no detail
+  float df = textureLod(uNoise, X / (uSize * 0.16), lod + 2.6).b;   // cauliflower edges
+  float m = mix(df, 1.0 - df, clamp(h * 3.0, 0.0, 1.0)) * 0.3 * dw; // wispy at the base, billowy above
+  return clamp(remap(c, m, 1.0, 0.0, 1.0), 0.0, 1.0);
+}
+void main() {
+  vec2 ndc = gl_FragCoord.xy / uRes * 2.0 - 1.0;
+  vec3 d = normalize(uF + ndc.x * uTan.x * uR + ndc.y * uTan.y * uU);
+  float b = dot(d, uCamE);
+  float r = length(gl_FragCoord.xy - uRes * 0.5) / (0.5 * length(uRes));
+  float va = uGlow * mix(0.26, 0.08, clamp(r, 0.0, 1.0));          // bloom veil
+  // Where does this line of sight enter and leave the cloud deck?
+  float tnT, tfT, tnB, tfB, t0, t1;
+  bool hT = sphere(b, uCt, tnT, tfT), hB = sphere(b, uCb, tnB, tfB);
+  if (uCt > 0.0) {                                                    // camera above the clouds
+    if (!hT || tfT < 0.0) { o = vec4(vec3(va), va); return; }
+    t0 = max(tnT, 0.0); t1 = (hB && tnB > 0.0) ? tnB : tfT;
+  } else if (uCb > 0.0) { t0 = 0.0; t1 = (hB && tnB > 0.0) ? tnB : tfT; }
+  else { t0 = tfB; t1 = tfT; }
+  float tm = 0.5 * (t0 + t1);
+  vec3 hitA = uCamA + d * tm;
+  vec3 gE = normalize(uCamE + d * tm);
+  float cosI = abs(dot(gE, d));
+  float fp = tm * uPix / max(cosI, 0.08);                             // size of one pixel at the clouds (km)
+  // ── How cloudy it is here ──
+  vec2 uvm = vec2(atan(gE.y, gE.x) / 6.2831853 + 0.5, 0.5 - asin(clamp(gE.z, -1.0, 1.0)) / 3.14159265);
+  float lodM = log2(max(fp / 15.5, 1.0));                             // one map pixel ≈ 15.5 km
+  float mapF = textureLod(uCloudMap, uvm, lodM).r, mapV = textureLod(uCloudMap, uvm, max(lodM, 2.5)).r;
+  vec3 Pc = hitA - uWind;
+  float clump = textureLod(uNoise, Pc / (uSize * 9.0), log2(max(fp / (uSize * 0.14), 1.0))).r;  // groups of clouds and gaps, ~20-40 km
+  float cov = (uMapOK > 0.5 ? 0.12 + mapV * 0.75 : 0.4) + (clump - 0.68) * 0.75;
+  cov = mix(cov, uCover + (clump - 0.68) * 0.75, exp(-length(hitA) / 150.0));
+  cov = clamp(cov, 0.0, 1.0);
+  float wFar = uMapOK > 0.5 ? smoothstep(2.0, 9.0, fp) : 0.0;        // very far: the NASA map itself
+  float texel = uSize / 64.0;
+  float lod = log2(max(fp / texel, 1.0));
+  float dw = 1.0 - smoothstep(0.04, 0.16, fp);                        // fine detail only up close
+  // Far away a pixel covers many clouds: blend toward their average so they
+  // fade into haze of the right amount instead of vanishing or merging
+  float wAvg = smoothstep(0.3, 2.2, lod);
+  float covEff = cov;
+  float hk = uRt - uRb;
+  float avgD = -log(max(1.0 - 0.85 * smoothstep(0.08, 0.75, cov), 0.02)) / (uSigma * hk * 0.45);
+  // ── March through the deck ──
+  vec3 acc = vec3(0.0); float T = 1.0;
+  if (wFar < 0.999 && cov > 0.02) {
+    const int STEPS = 32;
+    float seg = t1 - t0, dt = seg / float(STEPS);
+    float jit = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
+    float dtE = min(dt, hk * 2.0);                                    // grazing rays: don't let one step go solid
+    float up = dot(uSunDir, uUp);
+    for (int i = 0; i < STEPS; i++) {
+      float ts = t0 + (float(i) + jit) * dt;
+      vec3 X = uCamA + d * ts - uWind;
+      float h = clamp((length(uCamE + d * ts) - uRb) / hk, 0.0, 1.0);
+      float dn = density(X, h, covEff, lod, dw);
+      if (wAvg > 0.0) {
+        float topH = mix(0.45, 1.0, clamp(cov * 1.4, 0.0, 1.0));
+        float hp = smoothstep(0.0, 0.08, h) * (1.0 - smoothstep(topH * 0.5, topH, h));
+        dn = mix(dn, avgD * hp, wAvg);
+      }
+      if (dn < 0.002) continue;
+      // Light reaching this point from the sun: march a short way toward it
+      float od = 0.0, ls = 0.06;
+      vec3 L = X;
+      for (int j = 0; j < 5; j++) {
+        L += uSunDir * ls;
+        float hl = h + up * ls * float(j + 1) / hk;
+        if (hl > 1.0) break;
+        od += density(L, hl, covEff, lod + 0.5, -1.0) * ls;
+        ls *= 1.8;
+      }
+      od = mix(od, avgD * 0.35, wAvg);
+      float beer = exp(-od * uSigma);
+      float sunL = max(beer, exp(-od * uSigma * 0.25) * 0.45);           // multiple scattering keeps shadows soft
+      float powder = 1.0 - exp(-dn * uSigma * 0.6);                       // dark crevices on the sunlit side
+      sunL *= mix(1.0, mix(0.6, 1.0, powder), dw);
+      vec3 amb = mix(vec3(0.50, 0.56, 0.66), vec3(0.80, 0.85, 0.94), h); // undersides greyer, tops lit by the sky
+      vec3 col = vec3(1.0, 0.97, 0.92) * sunL * 1.05 + amb * 0.42;
+      col = 1.0 - exp(-col * 1.7);                                        // soft highlight rolloff
+      col = min(vec3(1.0), col + uGlow * 0.2);                            // bloom
+      float a = 1.0 - exp(-dn * uSigma * dtE);
+      acc += T * a * col; T *= 1.0 - a;
+      if (T < 0.02) break;
+    }
+  }
+  float cloudA = 1.0 - T;
+  // Very far: the NASA map
+  float aMap = smoothstep(0.04, 0.6, mapF) * 0.95;
+  acc = mix(acc, vec3(mix(0.8, 1.0, mapF), mix(0.82, 1.0, mapF), mix(0.86, 1.0, mapF)) * aMap, wFar);
+  cloudA = mix(cloudA, aMap, wFar);
+  // Keep map labels readable
+  float lab = 0.0;
+  for (int i = 0; i < 48; i++) {
+    if (i >= uLabN) break;
+    vec2 qq = abs(gl_FragCoord.xy - uLab[i].xy) - uLab[i].zw;
+    lab = max(lab, 1.0 - smoothstep(-2.0, 8.0, max(qq.x, qq.y)));
+  }
+  float labK = 1.0 - 0.85 * lab;
+  float clearMask = mix(1.0, smoothstep(uHole * 0.4, min(1.0, uHole + 0.45), r), uHoleAmt);
+  float k = uMaxA * uShown * clearMask * smoothstep(0.03, 0.3, cosI) * labK;
+  // ── Shadows on the ground ──
+  float sh = 0.0, tnG, tfG;
+  if (uShadow > 0.0 && T > 0.02 && fp < 0.6 && sphere(b, uCg, tnG, tfG) && tnG > 0.0) {
+    vec3 G = uCamA + d * tnG;
+    vec3 S = G + uSunDir * (uMid / max(dot(uSunDir, uUp), 0.3)) - uWind;
+    float fpG = tnG * uPix / max(cosI, 0.08);
+    float lodG = log2(max(max(fp, fpG) / texel, 1.0)) + 1.0;
+    float ds = density(S, 0.35, cov, lodG, 0.0) + density(S + uSunDir * 0.5, 0.6, cov, lodG, 0.0);
+    sh = (1.0 - exp(-ds * uSigma * 0.5)) * uShadow * (1.0 - smoothstep(0.15, 0.6, fp));
+  }
+  float A = cloudA * k, sA = sh * uShown * clearMask * labK * (1.0 - A);
+  float outA = A + sA;
+  o = vec4(acc * k + vec3(1.0) * va * (1.0 - outA), outA + va * (1.0 - outA));
+}`;
+
+// Earth-centred position (km) and local east/north/up at a lat/lng
+const R_EARTH = 6371;
+function geoFrame(lat, lng, altKm) {
+  const φ = (lat * Math.PI) / 180, λ = (lng * Math.PI) / 180;
+  const U = [Math.cos(φ) * Math.cos(λ), Math.cos(φ) * Math.sin(λ), Math.sin(φ)];
+  const E = [-Math.sin(λ), Math.cos(λ), 0];
+  const N = [-Math.sin(φ) * Math.cos(λ), -Math.sin(φ) * Math.sin(λ), Math.cos(φ)];
+  const r = R_EARTH + altKm;
+  return { P: U.map(v => v * r), U, E, N };
+}
+
+function CloudLayer({ map3dRef, labelsRef }) {
+  const canvasRef = useRef(null);
+  useEffect(() => {
+    const cv = canvasRef.current; if (!cv) return;
+    const gl = cv.getContext("webgl2", { premultipliedAlpha: true, alpha: true, antialias: false });
+    if (!gl) return; // very old browser: no clouds
+    const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.warn("cloud shader:", gl.getShaderInfoLog(s)); return s; };
+    const prog = gl.createProgram();
+    gl.attachShader(prog, sh(gl.VERTEX_SHADER, CLOUD_VS)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, CLOUD_FS));
+    gl.linkProgram(prog); if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { console.warn("cloud program:", gl.getProgramInfoLog(prog)); return; }
+    gl.useProgram(prog);
+    const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(prog, "p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    const U = {}; for (const n of ["uNoise", "uCloudMap", "uRes", "uTan", "uCamE", "uCamA", "uF", "uR", "uU", "uWind", "uSunDir", "uUp", "uCb", "uCt", "uCg", "uRb", "uRt", "uMid", "uPix", "uShown", "uGlow", "uHole", "uHoleAmt", "uMaxA", "uSigma", "uShadow", "uMapOK", "uSize", "uCover", "uLab", "uLabN"]) U[n] = gl.getUniformLocation(prog, n);
+    gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
+    let alive = true, noiseOK = false;
+    const loadImg = (src, onload) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => alive && onload(im); im.src = src; };
+    // 3D noise volume: a 512×512 PNG holding 64 slices of 64×64
+    const noiseTex = gl.createTexture(); gl.uniform1i(U.uNoise, 0);
+    loadImg(CLOUDS.noise, (im) => {
+      const c2 = document.createElement("canvas"); c2.width = c2.height = 512;
+      const x2 = c2.getContext("2d", { willReadFrequently: true }); x2.drawImage(im, 0, 0);
+      const px = x2.getImageData(0, 0, 512, 512).data, N = 64, vol = new Uint8Array(N * N * N * 4);
+      for (let z = 0; z < N; z++) { const ox = (z % 8) * N, oy = Math.floor(z / 8) * N;
+        for (let y = 0; y < N; y++) { const src = ((oy + y) * 512 + ox) * 4; vol.set(px.subarray(src, src + N * 4), ((z * N + y) * N) * 4); } }
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_3D, noiseTex);
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      gl.texImage3D(gl.TEXTURE_3D, 0, gl.RGBA8, N, N, N, 0, gl.RGBA, gl.UNSIGNED_BYTE, vol);
+      gl.generateMipmap(gl.TEXTURE_3D);
+      for (const k of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T, gl.TEXTURE_WRAP_R]) gl.texParameteri(gl.TEXTURE_3D, k, gl.REPEAT);
+      gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      noiseOK = true;
+    });
+    // Real cloud cover for far views: NASA Blue Marble cloud map (public domain)
+    const mapTex = gl.createTexture(); gl.uniform1i(U.uCloudMap, 1); gl.uniform1f(U.uMapOK, 0);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, mapTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, 1, 1, 0, gl.RED, gl.UNSIGNED_BYTE, new Uint8Array([0]));
+    gl.activeTexture(gl.TEXTURE0);
+    loadImg(CLOUDS.map, (im) => {
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, mapTex);
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, gl.RED, gl.UNSIGNED_BYTE, im);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.useProgram(prog); gl.uniform1f(U.uMapOK, 1);
+    });
+    const anchor = geoFrame(WORLD.lat, WORLD.lng, WORLD.altitude / 1000);
+    const Rg = R_EARTH + WORLD.altitude / 1000, Rb = Rg + CLOUDS.base, Rt = Rg + CLOUDS.top;
+    const az = (CLOUDS.sunAzimuth * Math.PI) / 180, el = (CLOUDS.sunElevation * Math.PI) / 180;
+    gl.uniform3fv(U.uSunDir, anchor.N.map((v, i) => Math.cos(el) * (Math.cos(az) * v + Math.sin(az) * anchor.E[i]) + Math.sin(el) * anchor.U[i]));
+    gl.uniform3fv(U.uUp, anchor.U);
+    gl.uniform1f(U.uRb, Rb); gl.uniform1f(U.uRt, Rt); gl.uniform1f(U.uMid, (CLOUDS.base + CLOUDS.top) / 2);
+    gl.uniform1f(U.uSigma, CLOUDS.density); gl.uniform1f(U.uShadow, CLOUDS.shadows);
+    gl.uniform1f(U.uSize, CLOUDS.size); gl.uniform1f(U.uCover, CLOUDS.cover);
+    let RES = 2; // canvas is half the screen size, scaled up by the browser (3 on slow machines)
+    const resize = () => { cv.width = Math.max(1, Math.ceil(cv.clientWidth / RES)); cv.height = Math.max(1, Math.ceil(cv.clientHeight / RES)); gl.viewport(0, 0, cv.width, cv.height); };
+    resize(); window.addEventListener("resize", resize);
+    const add = (a, b, k = 1) => a.map((v, i) => v + b[i] * k), dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+    let raf, last = performance.now(), t = 0, shown = 0, prevRange = null, glow = 0;
+    let prevRaf = performance.now(), slow = 0;
+    const frame = (now) => {
+      raf = requestAnimationFrame(frame);
+      // If the whole page is struggling while clouds are on screen, draw them at lower resolution
+      const gap = now - prevRaf; prevRaf = now;
+      if (shown > 0.3 && RES < 3) { slow = gap > 40 ? slow + 1 : Math.max(0, slow - 1); if (slow > 45) { RES = 3; resize(); } }
+      if (now - last < 30) return; // ~30 fps is plenty for slow clouds, and leaves the map more room
+      const dt = Math.min(0.1, (now - last) / 1000); last = now;
+      if (!still) t += dt;
+      const m = map3dRef.current;
+      const range = m && typeof m.range === "number" ? m.range : 0;
+      const vIn = prevRange == null ? 0 : Math.max(0, (prevRange - range) / Math.max(dt, 1e-3)); // zoom-in speed, m/s
+      prevRange = range;
+      const k = Math.min(1, Math.max(0, (range - CLOUDS.start) / (CLOUDS.full - CLOUDS.start)));
+      const f = Math.min(1, Math.max(0, (range - CLOUDS.fadeOut) / (CLOUDS.gone - CLOUDS.fadeOut)));
+      const target = noiseOK ? k * k * (3 - 2 * k) * (1 - f * f * (3 - 2 * f)) : 0;
+      shown += (target - shown) * Math.min(1, dt * 6);      // ease so it never pops
+      if (shown < 0.01) { if (cv.style.opacity !== "0") { gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); cv.style.opacity = "0"; } return; }
+      cv.style.opacity = "1";
+      // The map's camera
+      const c = m.center || WORLD;
+      const lat = typeof c.lat === "function" ? c.lat() : (c.lat ?? WORLD.lat), lng = typeof c.lng === "function" ? c.lng() : (c.lng ?? WORLD.lng);
+      const cAlt = typeof c.altitude === "number" ? c.altitude : WORLD.altitude;
+      const tilt = ((typeof m.tilt === "number" ? m.tilt : 55) * Math.PI) / 180, head = ((typeof m.heading === "number" ? m.heading : 0) * Math.PI) / 180;
+      const fov = ((typeof m.fov === "number" && m.fov > 0 ? m.fov : 35) * Math.PI) / 180;
+      const g = geoFrame(lat, lng, cAlt / 1000);
+      const fh = add(g.N.map(v => v * Math.cos(head)), g.E, Math.sin(head));        // level "forward"
+      const back = add(g.U.map(v => v * Math.cos(tilt)), fh, -Math.sin(tilt));      // from centre toward camera
+      const camE = add(g.P, back, range / 1000);
+      const F = back.map(v => -v), Up = add(fh.map(v => v * Math.cos(tilt)), g.U, Math.sin(tilt)), Rv = cross(F, Up);
+      const camLen = Math.sqrt(dot(camE, camE));
+      const tanH = Math.tan(fov / 2), aspect = cv.width / cv.height;
+      gl.useProgram(prog);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_3D, noiseTex);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, mapTex); gl.activeTexture(gl.TEXTURE0);
+      gl.uniform2f(U.uRes, cv.width, cv.height);
+      gl.uniform3fv(U.uCamE, camE); gl.uniform3fv(U.uCamA, add(camE, anchor.P, -1));
+      gl.uniform1f(U.uCb, (camLen - Rb) * (camLen + Rb)); gl.uniform1f(U.uCt, (camLen - Rt) * (camLen + Rt)); gl.uniform1f(U.uCg, (camLen - Rg) * (camLen + Rg));
+      gl.uniform3fv(U.uF, F); gl.uniform3fv(U.uR, Rv); gl.uniform3fv(U.uU, Up);
+      gl.uniform2f(U.uTan, tanH * aspect, tanH);
+      gl.uniform1f(U.uPix, (2 * tanH) / cv.height);
+      // Where the map labels are on screen (so the clouds can thin out over them)
+      const mm = labelsRef && labelsRef.current, lab = new Float32Array(48 * 4); let nLab = 0;
+      if (mm && mm.live) for (const lm of mm.live) {
+        if (!lm.attached || nLab >= 48) continue;
+        const lp = geoFrame(lm.loc.lat, lm.loc.lng, (WORLD.altitude + (mm.altitudes[lm.idx] || 0)) / 1000).P;
+        const v = add(lp, camE, -1), z = dot(v, F); if (z <= 0.01) continue;
+        const nx = dot(v, Rv) / (z * tanH * aspect), ny = dot(v, Up) / (z * tanH);
+        if (Math.abs(nx) > 1.3 || Math.abs(ny) > 1.3) continue;
+        const lw = (lm.el._lw || 240) / RES, lh = (lm.el._lh || 60) / RES;
+        lab.set([(nx + 1) / 2 * cv.width, (ny + 1) / 2 * cv.height + lh / 2, lw / 2, lh / 2], nLab * 4); nLab++;
+      }
+      gl.uniform4fv(U.uLab, lab); gl.uniform1i(U.uLabN, nLab);
+      gl.uniform3fv(U.uWind, anchor.E.map(v => v * t * CLOUDS.wind));
+      // Clear patch in the middle: smaller from higher up, gone once Ullo is a speck
+      const above = Math.min(1, Math.max(CLOUDS.minScale, CLOUDS.full / Math.max(range, 1)));
+      gl.uniform1f(U.uHole, (0.42 - 0.22 * shown) * (0.45 + 0.55 * above));
+      const hz = Math.min(1, Math.max(0, (range - 30000) / 170000));
+      gl.uniform1f(U.uHoleAmt, 1 - hz * hz * (3 - 2 * hz));
+      gl.uniform1f(U.uShown, shown); gl.uniform1f(U.uMaxA, CLOUDS.maxOpacity);
+      // Bloom while zooming in through the cloud layer
+      const band = Math.max(0, 4 * shown * (1 - shown));           // strongest mid-way through the clouds
+      const want = still ? 0 : Math.min(1, vIn / CLOUDS.flareSpeed) * band * CLOUDS.flare;
+      glow += (want - glow) * Math.min(1, dt * (want > glow ? 7 : 1.8)); // quick to rise, slow to fade
+      gl.uniform1f(U.uGlow, glow > 0.01 ? glow : 0);
+      gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    };
+    raf = requestAnimationFrame(frame);
+    return () => { alive = false; cancelAnimationFrame(raf); window.removeEventListener("resize", resize); gl.deleteTexture(noiseTex); gl.deleteTexture(mapTex); gl.deleteProgram(prog); gl.deleteBuffer(buf); };
+  }, [map3dRef, labelsRef]);
+  return <canvas ref={canvasRef} aria-hidden="true" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 2, pointerEvents: "none", opacity: 0, transition: "opacity .4s" }} />;
+}
+
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function UlloExplorer({ session, profile, onSignIn }) {
   const [sbOpen, setSbOpen] = useState(true);
@@ -1822,6 +2148,7 @@ export default function UlloExplorer({ session, profile, onSignIn }) {
       <style>{GLOBAL_CSS}</style>
 
       <div ref={mapRef} style={{ position: "absolute", inset: 0, zIndex: 1 }} />
+      {mapReady && <CloudLayer map3dRef={map3dRef} labelsRef={markers} />}
 
       {mapLoading && (
         <div style={{ position: "absolute", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, background: C.bg }}>
